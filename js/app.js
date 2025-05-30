@@ -3,18 +3,23 @@ let allNFTs = [];
 let filteredNFTs = [];
 let filters = {};
 let filterOptions = {};
+let nftListings = {}; // Store listing data for each NFT
 
 // IPFS gateway - using a public gateway
 const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
 
 // OpenSea API configuration
-const OPENSEA_API_URL = 'https://api.opensea.io/api/v2';
-const COLLECTION_SLUG = 'good-vibes-club'; // You'll need to replace this with actual collection slug
+const OPENSEA_API_BASE = 'https://api.opensea.io/api/v2';
+const COLLECTION_CONTRACT = '0xb8ea78fcacef50d41375e44e6814ebba36bb33c4'; // Good Vibes Club contract
+const OPENSEA_COLLECTION_SLUG = 'good-vibes-club';
+const CHAIN = 'ethereum'; // Chain identifier for OpenSea API
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
     await loadNFTData();
     setupEventListeners();
+    // Load all active listings after a short delay
+    setTimeout(loadAllListings, 1000);
 });
 
 // Load and parse CSV data
@@ -130,6 +135,38 @@ function renderFilters() {
     const container = document.getElementById('filters-container');
     container.innerHTML = '';
     
+    // Add special filters first
+    const specialFilterGroup = document.createElement('div');
+    specialFilterGroup.className = 'filter-group';
+    
+    const specialTitle = document.createElement('h3');
+    specialTitle.textContent = 'Special Filters';
+    specialFilterGroup.appendChild(specialTitle);
+    
+    const specialOptionsContainer = document.createElement('div');
+    specialOptionsContainer.className = 'filter-options';
+    
+    // Add "Listed" filter
+    const listedDiv = document.createElement('div');
+    listedDiv.className = 'filter-option';
+    
+    const listedCheckbox = document.createElement('input');
+    listedCheckbox.type = 'checkbox';
+    listedCheckbox.id = 'special-listed';
+    listedCheckbox.addEventListener('change', () => handleSpecialFilterChange('listed', listedCheckbox.checked));
+    
+    const listedLabel = document.createElement('label');
+    listedLabel.htmlFor = listedCheckbox.id;
+    listedLabel.innerHTML = `Listed/Has Activity <span class="filter-count">(0)</span>`;
+    
+    listedDiv.appendChild(listedCheckbox);
+    listedDiv.appendChild(listedLabel);
+    specialOptionsContainer.appendChild(listedDiv);
+    
+    specialFilterGroup.appendChild(specialOptionsContainer);
+    container.appendChild(specialFilterGroup);
+    
+    // Add regular attribute filters
     const attributeLabels = {
         'gender': 'Gender',
         'background': 'Background',
@@ -194,6 +231,24 @@ function handleFilterChange(attribute, value, isChecked) {
     applyFilters();
 }
 
+// Handle special filter changes
+function handleSpecialFilterChange(filterType, isChecked) {
+    if (!filters.special) {
+        filters.special = new Set();
+    }
+    
+    if (isChecked) {
+        filters.special.add(filterType);
+    } else {
+        filters.special.delete(filterType);
+        if (filters.special.size === 0) {
+            delete filters.special;
+        }
+    }
+    
+    applyFilters();
+}
+
 // Apply all active filters
 function applyFilters() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
@@ -207,9 +262,17 @@ function applyFilters() {
             }
         }
         
+        // Special filters
+        if (filters.special && filters.special.has('listed')) {
+            // Only show NFTs that have activity (sales history)
+            if (!nftListings[nft.token_id] || !nftListings[nft.token_id].hasActivity) {
+                return false;
+            }
+        }
+        
         // Attribute filters
         for (const [attribute, values] of Object.entries(filters)) {
-            if (values.size > 0 && !values.has(nft[attribute])) {
+            if (attribute !== 'special' && values.size > 0 && !values.has(nft[attribute])) {
                 return false;
             }
         }
@@ -237,6 +300,40 @@ function sortNFTs(sortBy) {
             break;
         case 'token_id_desc':
             filteredNFTs.sort((a, b) => parseInt(b.token_id) - parseInt(a.token_id));
+            break;
+        case 'price_asc':
+            // Sort by price ascending, with non-listed items at the end
+            filteredNFTs.sort((a, b) => {
+                const aListing = nftListings[a.token_id];
+                const bListing = nftListings[b.token_id];
+                
+                // If neither is listed, maintain original order
+                if (!aListing?.hasActivity && !bListing?.hasActivity) return 0;
+                
+                // Listed items come before non-listed
+                if (!aListing?.hasActivity) return 1;
+                if (!bListing?.hasActivity) return -1;
+                
+                // Both are listed, sort by price
+                return aListing.price - bListing.price;
+            });
+            break;
+        case 'price_desc':
+            // Sort by price descending, with non-listed items at the end
+            filteredNFTs.sort((a, b) => {
+                const aListing = nftListings[a.token_id];
+                const bListing = nftListings[b.token_id];
+                
+                // If neither is listed, maintain original order
+                if (!aListing?.hasActivity && !bListing?.hasActivity) return 0;
+                
+                // Listed items come before non-listed
+                if (!aListing?.hasActivity) return 1;
+                if (!bListing?.hasActivity) return -1;
+                
+                // Both are listed, sort by price
+                return bListing.price - aListing.price;
+            });
             break;
         case 'rarity_asc':
             filteredNFTs.sort((a, b) => a.rarityScore - b.rarityScore);
@@ -267,6 +364,16 @@ function createNFTCard(nft) {
     // Convert IPFS URL to gateway URL
     const imageUrl = nft.image_original_url.replace('ipfs://', IPFS_GATEWAY);
     
+    // Check if we already have listing data
+    let priceHTML = 'Loading price...';
+    if (nftListings[nft.token_id]) {
+        if (nftListings[nft.token_id].hasActivity) {
+            priceHTML = `${nftListings[nft.token_id].price.toFixed(3)} ETH`;
+        } else {
+            priceHTML = 'Not listed';
+        }
+    }
+    
     card.innerHTML = `
         <img class="nft-image" src="${imageUrl}" alt="GVC #${nft.token_id}" loading="lazy">
         <div class="nft-info">
@@ -275,34 +382,113 @@ function createNFTCard(nft) {
                 <div class="nft-trait">${nft.gender} ${nft.type_type}</div>
                 <div class="nft-trait">${nft.background} Background</div>
             </div>
-            <div class="nft-price" id="price-${nft.token_id}">Loading price...</div>
+            <div class="nft-price" id="price-${nft.token_id}">${priceHTML}</div>
         </div>
     `;
     
-    // Load price asynchronously
-    loadNFTPrice(nft.token_id);
+    // Don't make individual API calls - we load all listings in batch
     
     return card;
 }
 
-// Load NFT price from OpenSea
-async function loadNFTPrice(tokenId) {
+// This function is no longer needed as we load all listings in batch
+// Keeping it empty to avoid breaking any existing calls
+function loadNFTPrice(tokenId) {
+    // Prices are loaded in batch by loadAllListings()
+}
+
+// Load all active listings for the collection with pagination
+async function loadAllListings() {
     try {
-        // Note: OpenSea API v2 requires API key for most endpoints
-        // This is a placeholder - you'll need to implement actual OpenSea integration
-        // For now, we'll show a random price for demonstration
+        console.log('Loading all active listings...');
+        let allListings = [];
+        let nextCursor = null;
+        let pageCount = 0;
         
-        setTimeout(() => {
-            const priceElement = document.getElementById(`price-${tokenId}`);
-            if (priceElement) {
-                // Simulate price data
-                const price = (Math.random() * 2 + 0.1).toFixed(3);
-                priceElement.textContent = `${price} ETH`;
+        const options = {
+            headers: {
+                'X-API-KEY': CONFIG.OPENSEA_API_KEY,
+                'Accept': 'application/json'
             }
-        }, 1000);
+        };
+        
+        // Keep fetching until no more pages
+        do {
+            const url = nextCursor 
+                ? `${OPENSEA_API_BASE}/listings/collection/${OPENSEA_COLLECTION_SLUG}/all?limit=100&next=${nextCursor}`
+                : `${OPENSEA_API_BASE}/listings/collection/${OPENSEA_COLLECTION_SLUG}/all?limit=100`;
+            
+            const response = await fetch(url, options);
+            const data = await response.json();
+            
+            if (data && data.listings) {
+                allListings = allListings.concat(data.listings);
+                nextCursor = data.next;
+                pageCount++;
+                console.log(`Loaded page ${pageCount}, total listings so far: ${allListings.length}`);
+            } else {
+                break;
+            }
+            
+            // Add a small delay to avoid rate limits
+            if (nextCursor) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+        } while (nextCursor && pageCount < 20); // Limit to 20 pages max to avoid infinite loops
+        
+        console.log(`Total listings loaded: ${allListings.length}`);
+        
+        // Process all listings
+        allListings.forEach(listing => {
+            try {
+                const tokenId = listing.protocol_data.parameters.offer[0].identifierOrCriteria;
+                const priceData = listing.price.current;
+                const priceInEth = parseFloat(priceData.value) / Math.pow(10, priceData.decimals);
+                
+                nftListings[tokenId] = {
+                    hasActivity: true,
+                    price: priceInEth,
+                    listing: listing
+                };
+                
+                // Update the price display if the element exists
+                const priceElement = document.getElementById(`price-${tokenId}`);
+                if (priceElement) {
+                    priceElement.textContent = `${priceInEth.toFixed(3)} ETH`;
+                }
+            } catch (err) {
+                console.error('Error processing listing:', err, listing);
+            }
+        });
+        
+        // Mark all non-listed NFTs
+        allNFTs.forEach(nft => {
+            if (!nftListings[nft.token_id]) {
+                nftListings[nft.token_id] = {
+                    hasActivity: false
+                };
+            }
+        });
+        
+        console.log(`Processed ${Object.keys(nftListings).filter(k => nftListings[k].hasActivity).length} listed NFTs`);
+        updateListedFilter();
+        
+        // Re-render to show the prices
+        renderNFTs();
         
     } catch (error) {
-        console.error(`Error loading price for token ${tokenId}:`, error);
+        console.error('Error loading all listings:', error);
+    }
+}
+
+// Update the listed filter based on loaded data
+function updateListedFilter() {
+    const listedCheckbox = document.getElementById('special-listed');
+    if (listedCheckbox) {
+        const listedCount = Object.values(nftListings).filter(l => l.hasActivity).length;
+        const label = listedCheckbox.nextElementSibling;
+        label.innerHTML = `Listed/Has Activity <span class="filter-count">(${listedCount})</span>`;
     }
 }
 
@@ -356,7 +542,7 @@ function showNFTModal(nft) {
                     <div class="trait-value">${nft.rarityScore.toFixed(2)}</div>
                 </div>
                 
-                <a href="https://opensea.io/assets/ethereum/${COLLECTION_SLUG}/${nft.token_id}" 
+                <a href="https://opensea.io/assets/ethereum/${OPENSEA_COLLECTION_SLUG}/${nft.token_id}" 
                    target="_blank" 
                    class="opensea-link">
                     View on OpenSea

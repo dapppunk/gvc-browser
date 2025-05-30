@@ -26,11 +26,20 @@ Your NFT browser will be available at: `https://[your-username].github.io/[repos
 
 ## Configuration
 
-### OpenSea Integration
-To enable real OpenSea price data:
-1. Get an API key from OpenSea
-2. Update the `OPENSEA_API_URL` and implement proper API calls in `js/app.js`
-3. Replace `COLLECTION_SLUG` with the actual OpenSea collection slug
+### OpenSea API Integration
+The project uses OpenSea's API v2 for real-time listing data. To set it up:
+
+1. Copy `js/config.template.js` to `js/config.js`
+2. Get an API key from [OpenSea](https://docs.opensea.io/reference/api-keys)
+3. Add your API key to `js/config.js`
+4. Make sure `js/config.js` is in `.gitignore` (already configured)
+
+The app will show:
+- Current listing prices for NFTs that are for sale
+- "Not listed" for NFTs that aren't currently for sale
+- A filter to show only listed NFTs
+
+⚠️ **Important**: Never commit your API keys to GitHub!
 
 ### IPFS Gateway
 The default IPFS gateway is `https://ipfs.io/ipfs/`. You can change this in `js/app.js` if you prefer a different gateway.
