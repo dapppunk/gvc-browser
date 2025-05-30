@@ -7,43 +7,51 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Good Vibes Club Collection</h1>
-            <div class="stats">
-                <span id="total-count">Loading...</span>
-                <span id="filtered-count"></span>
-            </div>
-        </header>
+    <header>
+        <h1>Good Vibes Club Collection</h1>
+        <div class="stats">
+            <span id="total-count">Loading...</span>
+            <span id="filtered-count"></span>
+        </div>
+    </header>
 
-        <div class="filters-section">
-            <h2>Filters</h2>
-            <div class="search-box">
-                <input type="text" id="search-input" placeholder="Search by token ID or attributes...">
+    <div class="main-container">
+        <aside class="filters-sidebar">
+            <div class="filters-header">
+                <h2>Filters</h2>
+                <button id="clear-filters" class="clear-filters-btn">Clear All</button>
             </div>
+            
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search by token ID...">
+            </div>
+            
             <div id="filters-container" class="filters-container">
                 <!-- Filters will be dynamically generated here -->
             </div>
-            <button id="clear-filters" class="clear-filters-btn">Clear All Filters</button>
-        </div>
+        </aside>
 
-        <div class="sort-section">
-            <label for="sort-select">Sort by:</label>
-            <select id="sort-select">
-                <option value="token_id_asc">Token ID (Low to High)</option>
-                <option value="token_id_desc">Token ID (High to Low)</option>
-                <option value="price_asc">Price (Low to High)</option>
-                <option value="price_desc">Price (High to Low)</option>
-                <option value="rarity_asc">Rarity (Common to Rare)</option>
-                <option value="rarity_desc">Rarity (Rare to Common)</option>
-            </select>
-        </div>
-
-        <div id="nfts-grid" class="nfts-grid">
-            <!-- NFT cards will be dynamically generated here -->
-        </div>
-
-        <div id="loading" class="loading">Loading collection...</div>
+        <main class="content-area">
+            <div class="content-header">
+                <div class="sort-section">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select">
+                        <option value="price_asc" selected>Price (Low to High)</option>
+                        <option value="price_desc">Price (High to Low)</option>
+                        <option value="token_id_asc">Token ID (Low to High)</option>
+                        <option value="token_id_desc">Token ID (High to Low)</option>
+                        <option value="rarity_asc">Rarity (Common to Rare)</option>
+                        <option value="rarity_desc">Rarity (Rare to Common)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="nfts-grid" class="nfts-grid">
+                <!-- NFT cards will be dynamically generated here -->
+            </div>
+            
+            <div id="loading" class="loading">Loading collection...</div>
+        </main>
     </div>
 
     <!-- Modal for NFT details -->

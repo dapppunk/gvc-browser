@@ -115,18 +115,92 @@ function calculateRarity() {
     });
 }
 
-// Extract unique values for each filterable attribute
+// Extract unique values for each filterable attribute with hierarchical structure
 function extractFilterOptions() {
-    const filterableAttributes = ['gender', 'background', 'body_type', 'face_type', 'hair_type', 'type_type'];
+    // Define the hierarchical structure
+    filterOptions = {
+        gender: {},
+        background: {},
+        body: {
+            main: {},
+            byType: {}
+        },
+        face: {
+            main: {},
+            byType: {}
+        },
+        hair: {
+            main: {},
+            byType: {}
+        },
+        type: {
+            main: {},
+            byType: {}
+        }
+    };
     
-    filterableAttributes.forEach(attr => {
-        filterOptions[attr] = {};
-        allNFTs.forEach(nft => {
-            const value = nft[attr];
-            if (value && value.trim()) {
-                filterOptions[attr][value] = (filterOptions[attr][value] || 0) + 1;
+    allNFTs.forEach(nft => {
+        // Gender
+        if (nft.gender) {
+            filterOptions.gender[nft.gender] = (filterOptions.gender[nft.gender] || 0) + 1;
+        }
+        
+        // Background
+        if (nft.background) {
+            filterOptions.background[nft.background] = (filterOptions.background[nft.background] || 0) + 1;
+        }
+        
+        // Body - hierarchical
+        if (nft.body_type) {
+            filterOptions.body.main[nft.body_type] = (filterOptions.body.main[nft.body_type] || 0) + 1;
+            
+            if (!filterOptions.body.byType[nft.body_type]) {
+                filterOptions.body.byType[nft.body_type] = {};
             }
-        });
+            if (nft.body) {
+                filterOptions.body.byType[nft.body_type][nft.body] = 
+                    (filterOptions.body.byType[nft.body_type][nft.body] || 0) + 1;
+            }
+        }
+        
+        // Face - hierarchical
+        if (nft.face_type) {
+            filterOptions.face.main[nft.face_type] = (filterOptions.face.main[nft.face_type] || 0) + 1;
+            
+            if (!filterOptions.face.byType[nft.face_type]) {
+                filterOptions.face.byType[nft.face_type] = {};
+            }
+            if (nft.face) {
+                filterOptions.face.byType[nft.face_type][nft.face] = 
+                    (filterOptions.face.byType[nft.face_type][nft.face] || 0) + 1;
+            }
+        }
+        
+        // Hair - hierarchical
+        if (nft.hair_type) {
+            filterOptions.hair.main[nft.hair_type] = (filterOptions.hair.main[nft.hair_type] || 0) + 1;
+            
+            if (!filterOptions.hair.byType[nft.hair_type]) {
+                filterOptions.hair.byType[nft.hair_type] = {};
+            }
+            if (nft.hair) {
+                filterOptions.hair.byType[nft.hair_type][nft.hair] = 
+                    (filterOptions.hair.byType[nft.hair_type][nft.hair] || 0) + 1;
+            }
+        }
+        
+        // Type - hierarchical
+        if (nft.type_type) {
+            filterOptions.type.main[nft.type_type] = (filterOptions.type.main[nft.type_type] || 0) + 1;
+            
+            if (!filterOptions.type.byType[nft.type_type]) {
+                filterOptions.type.byType[nft.type_type] = {};
+            }
+            if (nft.type) {
+                filterOptions.type.byType[nft.type_type][nft.type] = 
+                    (filterOptions.type.byType[nft.type_type][nft.type] || 0) + 1;
+            }
+        }
     });
 }
 
@@ -135,18 +209,18 @@ function renderFilters() {
     const container = document.getElementById('filters-container');
     container.innerHTML = '';
     
-    // Add special filters first
-    const specialFilterGroup = document.createElement('div');
-    specialFilterGroup.className = 'filter-group';
+    // Add "Listed" filter at the top (starts expanded)
+    const listedFilterGroup = document.createElement('div');
+    listedFilterGroup.className = 'filter-group'; // No 'collapsed' class - starts expanded
     
-    const specialTitle = document.createElement('h3');
-    specialTitle.textContent = 'Special Filters';
-    specialFilterGroup.appendChild(specialTitle);
+    const listedTitle = document.createElement('h3');
+    listedTitle.textContent = 'Market Status';
+    listedTitle.onclick = () => toggleFilterGroup(listedFilterGroup);
+    listedFilterGroup.appendChild(listedTitle);
     
-    const specialOptionsContainer = document.createElement('div');
-    specialOptionsContainer.className = 'filter-options';
+    const listedOptionsContainer = document.createElement('div');
+    listedOptionsContainer.className = 'filter-options';
     
-    // Add "Listed" filter
     const listedDiv = document.createElement('div');
     listedDiv.className = 'filter-option';
     
@@ -157,60 +231,172 @@ function renderFilters() {
     
     const listedLabel = document.createElement('label');
     listedLabel.htmlFor = listedCheckbox.id;
-    listedLabel.innerHTML = `Listed/Has Activity <span class="filter-count">(0)</span>`;
+    listedLabel.innerHTML = `Listed for Sale <span class="filter-count">(0)</span>`;
     
     listedDiv.appendChild(listedCheckbox);
     listedDiv.appendChild(listedLabel);
-    specialOptionsContainer.appendChild(listedDiv);
+    listedOptionsContainer.appendChild(listedDiv);
     
-    specialFilterGroup.appendChild(specialOptionsContainer);
-    container.appendChild(specialFilterGroup);
+    listedFilterGroup.appendChild(listedOptionsContainer);
+    container.appendChild(listedFilterGroup);
     
-    // Add regular attribute filters
-    const attributeLabels = {
-        'gender': 'Gender',
-        'background': 'Background',
-        'body_type': 'Body',
-        'face_type': 'Face',
-        'hair_type': 'Hair',
-        'type_type': 'Type'
-    };
-    
-    Object.entries(filterOptions).forEach(([attribute, options]) => {
-        const filterGroup = document.createElement('div');
-        filterGroup.className = 'filter-group';
-        
-        const title = document.createElement('h3');
-        title.textContent = attributeLabels[attribute] || attribute;
-        filterGroup.appendChild(title);
-        
-        const optionsContainer = document.createElement('div');
-        optionsContainer.className = 'filter-options';
-        
-        Object.entries(options)
-            .sort((a, b) => b[1] - a[1]) // Sort by count
-            .forEach(([value, count]) => {
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'filter-option';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `${attribute}-${value}`;
-                checkbox.value = value;
-                checkbox.addEventListener('change', () => handleFilterChange(attribute, value, checkbox.checked));
-                
-                const label = document.createElement('label');
-                label.htmlFor = checkbox.id;
-                label.innerHTML = `${value} <span class="filter-count">(${count})</span>`;
-                
-                optionDiv.appendChild(checkbox);
-                optionDiv.appendChild(label);
-                optionsContainer.appendChild(optionDiv);
-            });
-        
-        filterGroup.appendChild(optionsContainer);
+    // Simple filters (Gender, Background)
+    ['gender', 'background'].forEach(attribute => {
+        const filterGroup = createSimpleFilterGroup(
+            attribute, 
+            attribute.charAt(0).toUpperCase() + attribute.slice(1),
+            filterOptions[attribute]
+        );
         container.appendChild(filterGroup);
     });
+    
+    // Hierarchical filters (Body, Face, Hair, Type)
+    const hierarchicalFilters = [
+        { key: 'body', label: 'Body' },
+        { key: 'face', label: 'Face' },
+        { key: 'hair', label: 'Hair' },
+        { key: 'type', label: 'Type' }
+    ];
+    
+    hierarchicalFilters.forEach(({ key, label }) => {
+        const filterGroup = createHierarchicalFilterGroup(key, label, filterOptions[key]);
+        container.appendChild(filterGroup);
+    });
+}
+
+// Create simple filter group
+function createSimpleFilterGroup(attribute, label, options) {
+    const filterGroup = document.createElement('div');
+    filterGroup.className = 'filter-group collapsed'; // Start collapsed
+    
+    const title = document.createElement('h3');
+    title.textContent = label;
+    title.onclick = () => toggleFilterGroup(filterGroup);
+    filterGroup.appendChild(title);
+    
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'filter-options';
+    
+    Object.entries(options)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([value, count]) => {
+            const optionDiv = createFilterOption(attribute, value, count, false);
+            optionsContainer.appendChild(optionDiv);
+        });
+    
+    filterGroup.appendChild(optionsContainer);
+    return filterGroup;
+}
+
+// Create hierarchical filter group
+function createHierarchicalFilterGroup(attribute, label, data) {
+    const filterGroup = document.createElement('div');
+    filterGroup.className = 'filter-group collapsed'; // Start collapsed
+    
+    const title = document.createElement('h3');
+    title.textContent = label;
+    title.onclick = () => toggleFilterGroup(filterGroup);
+    filterGroup.appendChild(title);
+    
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'filter-options';
+    
+    // Sort main categories by count
+    Object.entries(data.main)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([mainValue, mainCount]) => {
+            // Create a container for this category and its subcategories
+            const categoryContainer = document.createElement('div');
+            categoryContainer.className = 'category-container';
+            
+            // Add main category with expand/collapse capability
+            const mainOptionDiv = document.createElement('div');
+            mainOptionDiv.className = 'filter-option main-category';
+            
+            // Add expand/collapse arrow for categories with subcategories
+            const hasSubcategories = data.byType[mainValue] && Object.keys(data.byType[mainValue]).length > 0;
+            if (hasSubcategories) {
+                const arrow = document.createElement('span');
+                arrow.className = 'category-arrow';
+                arrow.innerHTML = '▶';
+                arrow.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleCategory(categoryContainer);
+                };
+                mainOptionDiv.appendChild(arrow);
+            }
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `${attribute}_type-${mainValue.replace(/\s+/g, '-')}`;
+            checkbox.value = mainValue;
+            checkbox.addEventListener('change', () => handleFilterChange(`${attribute}_type`, mainValue, checkbox.checked));
+            
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.innerHTML = `${mainValue} <span class="filter-count">(${mainCount})</span>`;
+            
+            mainOptionDiv.appendChild(checkbox);
+            mainOptionDiv.appendChild(label);
+            categoryContainer.appendChild(mainOptionDiv);
+            
+            // Add subcategories container if they exist
+            if (hasSubcategories) {
+                const subContainer = document.createElement('div');
+                subContainer.className = 'subcategories-container collapsed';
+                
+                Object.entries(data.byType[mainValue])
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([subValue, subCount]) => {
+                        const subOption = createFilterOption(attribute, subValue, subCount, true);
+                        subContainer.appendChild(subOption);
+                    });
+                
+                categoryContainer.appendChild(subContainer);
+            }
+            
+            optionsContainer.appendChild(categoryContainer);
+        });
+    
+    filterGroup.appendChild(optionsContainer);
+    return filterGroup;
+}
+
+// Toggle category expansion
+function toggleCategory(categoryContainer) {
+    const arrow = categoryContainer.querySelector('.category-arrow');
+    const subContainer = categoryContainer.querySelector('.subcategories-container');
+    
+    if (subContainer) {
+        subContainer.classList.toggle('collapsed');
+        arrow.innerHTML = subContainer.classList.contains('collapsed') ? '▶' : '▼';
+    }
+}
+
+// Create individual filter option
+function createFilterOption(attribute, value, count, isSubFilter) {
+    const optionDiv = document.createElement('div');
+    optionDiv.className = isSubFilter ? 'filter-option sub-filter' : 'filter-option';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `${attribute}-${value.replace(/\s+/g, '-')}`;
+    checkbox.value = value;
+    checkbox.addEventListener('change', () => handleFilterChange(attribute, value, checkbox.checked));
+    
+    const label = document.createElement('label');
+    label.htmlFor = checkbox.id;
+    label.innerHTML = `${value} <span class="filter-count">(${count})</span>`;
+    
+    optionDiv.appendChild(checkbox);
+    optionDiv.appendChild(label);
+    
+    return optionDiv;
+}
+
+// Toggle filter group collapse
+function toggleFilterGroup(filterGroup) {
+    filterGroup.classList.toggle('collapsed');
 }
 
 // Handle filter changes
@@ -365,8 +551,8 @@ function createNFTCard(nft) {
     const imageUrl = nft.image_original_url.replace('ipfs://', IPFS_GATEWAY);
     
     // Check if we already have listing data
-    let priceHTML = 'Loading price...';
-    if (nftListings[nft.token_id]) {
+    let priceHTML = 'Checking...';
+    if (nftListings[nft.token_id] !== undefined) {
         if (nftListings[nft.token_id].hasActivity) {
             priceHTML = `${nftListings[nft.token_id].price.toFixed(3)} ETH`;
         } else {
@@ -386,8 +572,6 @@ function createNFTCard(nft) {
         </div>
     `;
     
-    // Don't make individual API calls - we load all listings in batch
-    
     return card;
 }
 
@@ -401,9 +585,9 @@ function loadNFTPrice(tokenId) {
 async function loadAllListings() {
     try {
         console.log('Loading all active listings...');
-        let allListings = [];
         let nextCursor = null;
         let pageCount = 0;
+        let totalProcessed = 0;
         
         const options = {
             headers: {
@@ -422,47 +606,46 @@ async function loadAllListings() {
             const data = await response.json();
             
             if (data && data.listings) {
-                allListings = allListings.concat(data.listings);
+                // Process listings from this page immediately
+                data.listings.forEach(listing => {
+                    try {
+                        const tokenId = listing.protocol_data.parameters.offer[0].identifierOrCriteria;
+                        const priceData = listing.price.current;
+                        const priceInEth = parseFloat(priceData.value) / Math.pow(10, priceData.decimals);
+                        
+                        nftListings[tokenId] = {
+                            hasActivity: true,
+                            price: priceInEth,
+                            listing: listing
+                        };
+                        
+                        totalProcessed++;
+                    } catch (err) {
+                        console.error('Error processing listing:', err, listing);
+                    }
+                });
+                
                 nextCursor = data.next;
                 pageCount++;
-                console.log(`Loaded page ${pageCount}, total listings so far: ${allListings.length}`);
+                console.log(`Loaded page ${pageCount}, total listings so far: ${totalProcessed}`);
+                
+                // Update display after each page
+                updateListedFilter();
+                updateDisplay();
+                
+                // Add a small delay to avoid rate limits
+                if (nextCursor) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
             } else {
                 break;
             }
             
-            // Add a small delay to avoid rate limits
-            if (nextCursor) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            
         } while (nextCursor && pageCount < 20); // Limit to 20 pages max to avoid infinite loops
         
-        console.log(`Total listings loaded: ${allListings.length}`);
+        console.log(`Total listings loaded: ${totalProcessed}`);
         
-        // Process all listings
-        allListings.forEach(listing => {
-            try {
-                const tokenId = listing.protocol_data.parameters.offer[0].identifierOrCriteria;
-                const priceData = listing.price.current;
-                const priceInEth = parseFloat(priceData.value) / Math.pow(10, priceData.decimals);
-                
-                nftListings[tokenId] = {
-                    hasActivity: true,
-                    price: priceInEth,
-                    listing: listing
-                };
-                
-                // Update the price display if the element exists
-                const priceElement = document.getElementById(`price-${tokenId}`);
-                if (priceElement) {
-                    priceElement.textContent = `${priceInEth.toFixed(3)} ETH`;
-                }
-            } catch (err) {
-                console.error('Error processing listing:', err, listing);
-            }
-        });
-        
-        // Mark all non-listed NFTs
+        // Mark all non-listed NFTs after all pages are loaded
         allNFTs.forEach(nft => {
             if (!nftListings[nft.token_id]) {
                 nftListings[nft.token_id] = {
@@ -471,11 +654,9 @@ async function loadAllListings() {
             }
         });
         
-        console.log(`Processed ${Object.keys(nftListings).filter(k => nftListings[k].hasActivity).length} listed NFTs`);
+        // Final update
         updateListedFilter();
-        
-        // Re-render to show the prices
-        renderNFTs();
+        updateDisplay();
         
     } catch (error) {
         console.error('Error loading all listings:', error);
