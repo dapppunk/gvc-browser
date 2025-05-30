@@ -7,23 +7,40 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <h1>Good Vibes Club Collection</h1>
-        <div class="stats">
-            <span id="total-count">Loading...</span>
-            <span id="filtered-count"></span>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <h1>Vibe Browser</h1>
         </div>
-    </header>
+        
+        <div class="navbar-controls">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search by token ID or attributes...">
+            </div>
+            
+            <div class="sort-section">
+                <label for="sort-select">Sort:</label>
+                <select id="sort-select">
+                    <option value="price_asc" selected>Price ↑</option>
+                    <option value="price_desc">Price ↓</option>
+                    <option value="token_id_asc">ID ↑</option>
+                    <option value="token_id_desc">ID ↓</option>
+                    <option value="rarity_asc">Rarity ↑</option>
+                    <option value="rarity_desc">Rarity ↓</option>
+                </select>
+            </div>
+            
+            <div class="stats">
+                <span id="total-count">Loading...</span>
+                <span id="filtered-count"></span>
+            </div>
+        </div>
+    </nav>
 
     <div class="main-container">
         <aside class="filters-sidebar">
             <div class="filters-header">
                 <h2>Filters</h2>
                 <button id="clear-filters" class="clear-filters-btn">Clear All</button>
-            </div>
-            
-            <div class="search-box">
-                <input type="text" id="search-input" placeholder="Search by token ID...">
             </div>
             
             <div id="filters-container" class="filters-container">
@@ -33,17 +50,6 @@
 
         <main class="content-area">
             <div class="content-header">
-                <div class="sort-section">
-                    <label for="sort-select">Sort by:</label>
-                    <select id="sort-select">
-                        <option value="price_asc" selected>Price (Low to High)</option>
-                        <option value="price_desc">Price (High to Low)</option>
-                        <option value="token_id_asc">Token ID (Low to High)</option>
-                        <option value="token_id_desc">Token ID (High to Low)</option>
-                        <option value="rarity_asc">Rarity (Common to Rare)</option>
-                        <option value="rarity_desc">Rarity (Rare to Common)</option>
-                    </select>
-                </div>
             </div>
             
             <div id="nfts-grid" class="nfts-grid">
