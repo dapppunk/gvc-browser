@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Good Vibes Club NFT Browser</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Good Vibes Club Collection</h1>
+            <div class="stats">
+                <span id="total-count">Loading...</span>
+                <span id="filtered-count"></span>
+            </div>
+        </header>
+
+        <div class="filters-section">
+            <h2>Filters</h2>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search by token ID or attributes...">
+            </div>
+            <div id="filters-container" class="filters-container">
+                <!-- Filters will be dynamically generated here -->
+            </div>
+            <button id="clear-filters" class="clear-filters-btn">Clear All Filters</button>
+        </div>
+
+        <div class="sort-section">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select">
+                <option value="token_id_asc">Token ID (Low to High)</option>
+                <option value="token_id_desc">Token ID (High to Low)</option>
+                <option value="rarity_asc">Rarity (Common to Rare)</option>
+                <option value="rarity_desc">Rarity (Rare to Common)</option>
+            </select>
+        </div>
+
+        <div id="nfts-grid" class="nfts-grid">
+            <!-- NFT cards will be dynamically generated here -->
+        </div>
+
+        <div id="loading" class="loading">Loading collection...</div>
+    </div>
+
+    <!-- Modal for NFT details -->
+    <div id="nft-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
