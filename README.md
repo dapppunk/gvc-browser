@@ -15,31 +15,48 @@ A web-based browser for the Good Vibes Club NFT collection, featuring advanced f
 
 ## Deployment to GitHub Pages
 
-1. Create a new GitHub repository
-2. Upload all files from the `gvc-browser` directory
-3. Go to Settings → Pages
-4. Select "Deploy from a branch"
-5. Choose "main" branch and "/ (root)" folder
-6. Save and wait for deployment
+### Step 1: Add your OpenSea API Key as a GitHub Secret
+1. Go to your repository on GitHub
+2. Click on **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Name: `OPENSEA_API_KEY`
+5. Value: Your OpenSea API key
+6. Click **Add secret**
+
+### Step 2: Enable GitHub Pages
+1. Go to **Settings** → **Pages**
+2. Under "Source", select **GitHub Actions**
+3. Save the settings
+
+### Step 3: Deploy
+The site will automatically deploy when you push to the `main` branch. You can also manually trigger a deployment:
+1. Go to **Actions** tab
+2. Select "Deploy to GitHub Pages" workflow
+3. Click **Run workflow**
 
 Your NFT browser will be available at: `https://[your-username].github.io/[repository-name]/`
 
 ## Configuration
 
-### OpenSea API Integration
-The project uses OpenSea's API v2 for real-time listing data. To set it up:
-
+### For Local Development
 1. Copy `js/config.template.js` to `js/config.js`
 2. Get an API key from [OpenSea](https://docs.opensea.io/reference/api-keys)
 3. Add your API key to `js/config.js`
 4. Make sure `js/config.js` is in `.gitignore` (already configured)
+
+### For GitHub Pages / Production Use
+The API key is securely injected during the build process using GitHub Secrets. See the deployment section above for setup instructions.
 
 The app will show:
 - Current listing prices for NFTs that are for sale
 - "Not listed" for NFTs that aren't currently for sale
 - A filter to show only listed NFTs
 
-⚠️ **Important**: Never commit your API keys to GitHub!
+⚠️ **Security Notes**: 
+- API keys are stored as GitHub Secrets and injected during build
+- Never commit API keys directly to the repository
+- Set domain restrictions on your OpenSea API key for additional security
+- The API key will be visible in the browser's JavaScript, so use domain restrictions
 
 ### IPFS Gateway
 The default IPFS gateway is `https://ipfs.io/ipfs/`. You can change this in `js/app.js` if you prefer a different gateway.
