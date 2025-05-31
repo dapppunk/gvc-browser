@@ -655,7 +655,15 @@ function createNFTCard(nft) {
     card.innerHTML = `
         <img class="nft-image" src="${imageUrl}" alt="GVC #${nft.token_id}" loading="lazy">
         <div class="nft-info">
-            <div class="nft-price" id="price-${nft.token_id}">${priceHTML}</div>
+            <div class="nft-price-container">
+                <span class="nft-price" id="price-${nft.token_id}">${priceHTML}</span>
+                <a href="https://opensea.io/assets/ethereum/${COLLECTION_CONTRACT}/${nft.token_id}" 
+                   target="_blank" 
+                   class="opensea-icon-link"
+                   onclick="event.stopPropagation()">
+                    <img src="images/opensea-logo.svg" alt="View on OpenSea" class="opensea-icon">
+                </a>
+            </div>
             <div class="nft-title">${nft.token_id}</div>
         </div>
     `;

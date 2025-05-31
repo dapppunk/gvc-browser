@@ -345,10 +345,32 @@ body {
     margin-bottom: 5px;
 }
 
+.nft-price-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .nft-price {
     font-size: 1em;
     color: #333;
     font-weight: bold;
+}
+
+.opensea-icon-link {
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.opensea-icon-link:hover {
+    opacity: 1;
+}
+
+.opensea-icon {
+    width: 16px;
+    height: 16px;
 }
 
 .loading {
