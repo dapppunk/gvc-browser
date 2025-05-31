@@ -255,7 +255,7 @@ function renderFilters() {
     
     const listedLabel = document.createElement('label');
     listedLabel.htmlFor = listedCheckbox.id;
-    listedLabel.innerHTML = `Listed for Sale <span class="filter-count">(0)</span>`;
+    listedLabel.innerHTML = `Listed <span class="filter-count">(0)</span>`;
     
     listedDiv.appendChild(listedCheckbox);
     listedDiv.appendChild(listedLabel);
@@ -761,7 +761,7 @@ function updateListedFilter() {
     if (listedCheckbox) {
         const listedCount = Object.values(nftListings).filter(l => l.hasActivity).length;
         const label = listedCheckbox.nextElementSibling;
-        label.innerHTML = `Listed/Has Activity <span class="filter-count">(${listedCount})</span>`;
+        label.innerHTML = `Listed <span class="filter-count">(${listedCount})</span>`;
     }
 }
 
