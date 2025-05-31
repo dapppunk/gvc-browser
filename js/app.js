@@ -122,11 +122,14 @@ function extractFilterOptions() {
         gender: {},
         type_color: {},
         type_type: {},
-        background: {
+        body_color: {},
+        hair_color: {},
+        face_color: {},
+        body: {
             main: {},
             byType: {}
         },
-        body: {
+        background: {
             main: {},
             byType: {}
         },
@@ -164,43 +167,58 @@ function extractFilterOptions() {
             }
         }
         
-        // Body - hierarchical
+        // Body - hierarchical with body_style
         if (nft.body_type) {
             filterOptions.body.main[nft.body_type] = (filterOptions.body.main[nft.body_type] || 0) + 1;
             
             if (!filterOptions.body.byType[nft.body_type]) {
                 filterOptions.body.byType[nft.body_type] = {};
             }
-            if (nft.body) {
-                filterOptions.body.byType[nft.body_type][nft.body] = 
-                    (filterOptions.body.byType[nft.body_type][nft.body] || 0) + 1;
+            if (nft.body_style) {
+                filterOptions.body.byType[nft.body_type][nft.body_style] = 
+                    (filterOptions.body.byType[nft.body_type][nft.body_style] || 0) + 1;
             }
         }
         
-        // Face - hierarchical
+        // Body Color - simple
+        if (nft.body_color) {
+            filterOptions.body_color[nft.body_color] = (filterOptions.body_color[nft.body_color] || 0) + 1;
+        }
+        
+        // Face - hierarchical with face_style
         if (nft.face_type) {
             filterOptions.face.main[nft.face_type] = (filterOptions.face.main[nft.face_type] || 0) + 1;
             
             if (!filterOptions.face.byType[nft.face_type]) {
                 filterOptions.face.byType[nft.face_type] = {};
             }
-            if (nft.face) {
-                filterOptions.face.byType[nft.face_type][nft.face] = 
-                    (filterOptions.face.byType[nft.face_type][nft.face] || 0) + 1;
+            if (nft.face_style) {
+                filterOptions.face.byType[nft.face_type][nft.face_style] = 
+                    (filterOptions.face.byType[nft.face_type][nft.face_style] || 0) + 1;
             }
         }
         
-        // Hair - hierarchical
+        // Face Color - simple (only for face_type = "Glasses")
+        if (nft.face_color && nft.face_type === 'Glasses') {
+            filterOptions.face_color[nft.face_color] = (filterOptions.face_color[nft.face_color] || 0) + 1;
+        }
+        
+        // Hair - hierarchical with hair_style
         if (nft.hair_type) {
             filterOptions.hair.main[nft.hair_type] = (filterOptions.hair.main[nft.hair_type] || 0) + 1;
             
             if (!filterOptions.hair.byType[nft.hair_type]) {
                 filterOptions.hair.byType[nft.hair_type] = {};
             }
-            if (nft.hair) {
-                filterOptions.hair.byType[nft.hair_type][nft.hair] = 
-                    (filterOptions.hair.byType[nft.hair_type][nft.hair] || 0) + 1;
+            if (nft.hair_style) {
+                filterOptions.hair.byType[nft.hair_type][nft.hair_style] = 
+                    (filterOptions.hair.byType[nft.hair_type][nft.hair_style] || 0) + 1;
             }
+        }
+        
+        // Hair Color - simple (only for hair_type = "Hair")
+        if (nft.hair_color && nft.hair_type === 'Hair') {
+            filterOptions.hair_color[nft.hair_color] = (filterOptions.hair_color[nft.hair_color] || 0) + 1;
         }
         
         // Type Type - simple
@@ -264,7 +282,7 @@ function renderFilters() {
     );
     container.appendChild(typeGroup);
     
-    // Type Color filter (after Type)
+    // Type Color filter
     const typeColorGroup = createSimpleFilterGroup(
         'type_color', 
         'Type Color',
@@ -273,17 +291,44 @@ function renderFilters() {
     );
     container.appendChild(typeColorGroup);
     
-    // Hierarchical filters (Body, Face, Hair)
-    const hierarchicalFilters = [
-        { key: 'body', label: 'Body' },
-        { key: 'face', label: 'Face' },
-        { key: 'hair', label: 'Hair' }
-    ];
+    // Body filter (hierarchical)
+    const bodyGroup = createHierarchicalFilterGroup('body', 'Body', filterOptions.body);
+    container.appendChild(bodyGroup);
     
-    hierarchicalFilters.forEach(({ key, label }) => {
-        const filterGroup = createHierarchicalFilterGroup(key, label, filterOptions[key]);
-        container.appendChild(filterGroup);
-    });
+    // Body Color filter
+    const bodyColorGroup = createSimpleFilterGroup(
+        'body_color', 
+        'Body Color',
+        filterOptions.body_color,
+        true // Add spacer for alignment
+    );
+    container.appendChild(bodyColorGroup);
+    
+    // Face filter (hierarchical)
+    const faceGroup = createHierarchicalFilterGroup('face', 'Face', filterOptions.face);
+    container.appendChild(faceGroup);
+    
+    // Face Color filter
+    const faceColorGroup = createSimpleFilterGroup(
+        'face_color', 
+        'Face Color',
+        filterOptions.face_color,
+        true // Add spacer for alignment
+    );
+    container.appendChild(faceColorGroup);
+    
+    // Hair filter (hierarchical)
+    const hairGroup = createHierarchicalFilterGroup('hair', 'Hair', filterOptions.hair);
+    container.appendChild(hairGroup);
+    
+    // Hair Color filter
+    const hairColorGroup = createSimpleFilterGroup(
+        'hair_color', 
+        'Hair Color',
+        filterOptions.hair_color,
+        true // Add spacer for alignment
+    );
+    container.appendChild(hairColorGroup);
     
     // Background filter (last)
     const backgroundGroup = createHierarchicalFilterGroup('background', 'Background', filterOptions.background);
@@ -382,7 +427,13 @@ function createHierarchicalFilterGroup(attribute, label, data) {
                 Object.entries(data.byType[mainValue])
                     .sort((a, b) => b[1] - a[1])
                     .forEach(([subValue, subCount]) => {
-                        const subOption = createFilterOption(attribute, subValue, subCount, true);
+                        // Use specific attribute for subcategories
+                        let subAttribute = attribute;
+                        if (attribute === 'body') subAttribute = 'body_style';
+                        else if (attribute === 'hair') subAttribute = 'hair_style';
+                        else if (attribute === 'face') subAttribute = 'face_style';
+                        
+                        const subOption = createFilterOption(subAttribute, subValue, subCount, true);
                         subContainer.appendChild(subOption);
                     });
                 
