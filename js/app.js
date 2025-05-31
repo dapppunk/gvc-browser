@@ -687,20 +687,23 @@ function createNFTCard(nft) {
         }
     }
     
-    // Use placeholder and lazy load
+    // Use placeholder and lazy load with loading indicator
     card.innerHTML = `
-        <img class="nft-image" 
-             data-src="${imageUrl}" 
-             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f0f0f0'/%3E%3C/svg%3E"
-             alt="GVC #${nft.token_id}" 
-             loading="lazy">
+        <div class="nft-image-container">
+            <img class="nft-image" 
+                 data-src="${imageUrl}" 
+                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f0f0f0'/%3E%3C/svg%3E"
+                 alt="GVC #${nft.token_id}" 
+                 loading="lazy">
+            <div class="image-loader"></div>
+        </div>
         <div class="nft-info">
             <div class="nft-price-container">
-                <span class="nft-price" id="price-${nft.token_id}">${priceHTML}</span>
                 <a href="https://opensea.io/assets/ethereum/${COLLECTION_CONTRACT}/${nft.token_id}" 
                    target="_blank" 
-                   class="opensea-icon-link"
+                   class="nft-price-link"
                    onclick="event.stopPropagation()">
+                    <span class="nft-price" id="price-${nft.token_id}">${priceHTML}</span>
                     <img src="images/opensea-logo.svg" alt="View on OpenSea" class="opensea-icon">
                 </a>
             </div>
