@@ -317,20 +317,22 @@ body {
 
 .nft-image {
     width: 100%;
-    height: 280px;
-    object-fit: cover;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
     background: #f0f0f0;
 }
 
 .nft-info {
     padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .nft-title {
-    font-size: 1.2em;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #333;
+    font-size: 1em;
+    font-weight: normal;
+    color: #666;
 }
 
 .nft-traits {
@@ -344,10 +346,9 @@ body {
 }
 
 .nft-price {
-    font-size: 1.1em;
-    color: #667eea;
+    font-size: 1em;
+    color: #333;
     font-weight: bold;
-    margin-top: 10px;
 }
 
 .loading {

@@ -655,12 +655,8 @@ function createNFTCard(nft) {
     card.innerHTML = `
         <img class="nft-image" src="${imageUrl}" alt="GVC #${nft.token_id}" loading="lazy">
         <div class="nft-info">
-            <div class="nft-title">GVC #${nft.token_id}</div>
-            <div class="nft-traits">
-                <div class="nft-trait">${nft.gender} ${nft.type_type}</div>
-                <div class="nft-trait">${nft.background} Background</div>
-            </div>
             <div class="nft-price" id="price-${nft.token_id}">${priceHTML}</div>
+            <div class="nft-title">${nft.token_id}</div>
         </div>
     `;
     
