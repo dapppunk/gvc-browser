@@ -120,7 +120,10 @@ function extractFilterOptions() {
     // Define the hierarchical structure
     filterOptions = {
         gender: {},
-        background: {},
+        background: {
+            main: {},
+            byType: {}
+        },
         body: {
             main: {},
             byType: {}
@@ -145,9 +148,17 @@ function extractFilterOptions() {
             filterOptions.gender[nft.gender] = (filterOptions.gender[nft.gender] || 0) + 1;
         }
         
-        // Background
-        if (nft.background) {
-            filterOptions.background[nft.background] = (filterOptions.background[nft.background] || 0) + 1;
+        // Background - hierarchical
+        if (nft.background_type) {
+            filterOptions.background.main[nft.background_type] = (filterOptions.background.main[nft.background_type] || 0) + 1;
+            
+            if (!filterOptions.background.byType[nft.background_type]) {
+                filterOptions.background.byType[nft.background_type] = {};
+            }
+            if (nft.background) {
+                filterOptions.background.byType[nft.background_type][nft.background] = 
+                    (filterOptions.background.byType[nft.background_type][nft.background] || 0) + 1;
+            }
         }
         
         // Body - hierarchical
@@ -240,18 +251,17 @@ function renderFilters() {
     listedFilterGroup.appendChild(listedOptionsContainer);
     container.appendChild(listedFilterGroup);
     
-    // Simple filters (Gender, Background)
-    ['gender', 'background'].forEach(attribute => {
-        const filterGroup = createSimpleFilterGroup(
-            attribute, 
-            attribute.charAt(0).toUpperCase() + attribute.slice(1),
-            filterOptions[attribute]
-        );
-        container.appendChild(filterGroup);
-    });
+    // Simple filters (Gender only)
+    const genderGroup = createSimpleFilterGroup(
+        'gender', 
+        'Gender',
+        filterOptions.gender
+    );
+    container.appendChild(genderGroup);
     
-    // Hierarchical filters (Body, Face, Hair, Type)
+    // Hierarchical filters (Background, Body, Face, Hair, Type)
     const hierarchicalFilters = [
+        { key: 'background', label: 'Background' },
         { key: 'body', label: 'Body' },
         { key: 'face', label: 'Face' },
         { key: 'hair', label: 'Hair' },
@@ -313,8 +323,11 @@ function createHierarchicalFilterGroup(attribute, label, data) {
             const mainOptionDiv = document.createElement('div');
             mainOptionDiv.className = 'filter-option main-category';
             
+            // Special handling for Background - only show subcategories for "1 of 1"
+            const showSubcategories = attribute === 'background' ? mainValue === '1 of 1' : true;
+            
             // Add expand/collapse arrow for categories with subcategories
-            const hasSubcategories = data.byType[mainValue] && Object.keys(data.byType[mainValue]).length > 0;
+            const hasSubcategories = showSubcategories && data.byType[mainValue] && Object.keys(data.byType[mainValue]).length > 0;
             if (hasSubcategories) {
                 const arrow = document.createElement('span');
                 arrow.className = 'category-arrow';
@@ -324,6 +337,11 @@ function createHierarchicalFilterGroup(attribute, label, data) {
                     toggleCategory(categoryContainer);
                 };
                 mainOptionDiv.appendChild(arrow);
+            } else {
+                // Add spacer for alignment when there's no arrow
+                const spacer = document.createElement('span');
+                spacer.className = 'category-arrow-spacer';
+                mainOptionDiv.appendChild(spacer);
             }
             
             const checkbox = document.createElement('input');
@@ -340,8 +358,8 @@ function createHierarchicalFilterGroup(attribute, label, data) {
             mainOptionDiv.appendChild(label);
             categoryContainer.appendChild(mainOptionDiv);
             
-            // Add subcategories container if they exist
-            if (hasSubcategories) {
+            // Add subcategories container if they exist and should be shown
+            if (hasSubcategories && showSubcategories) {
                 const subContainer = document.createElement('div');
                 subContainer.className = 'subcategories-container collapsed';
                 

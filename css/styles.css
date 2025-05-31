@@ -217,13 +217,17 @@ body {
     font-weight: 500;
 }
 
-.category-arrow {
+.category-arrow,
+.category-arrow-spacer {
     display: inline-block;
     width: 20px;
     text-align: center;
-    cursor: pointer;
     user-select: none;
     font-size: 0.8em;
+}
+
+.category-arrow {
+    cursor: pointer;
     color: #6b6d7d;
     transition: all 0.2s;
 }
