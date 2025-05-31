@@ -5,8 +5,13 @@ let filters = {};
 let filterOptions = {};
 let nftListings = {}; // Store listing data for each NFT
 
-// IPFS gateway - using a public gateway
-const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
+// IPFS gateway - using faster gateways with fallback
+const IPFS_GATEWAYS = [
+    'https://nftstorage.link/ipfs/',
+    'https://cloudflare-ipfs.com/ipfs/',
+    'https://ipfs.io/ipfs/'
+];
+const IPFS_GATEWAY = IPFS_GATEWAYS[0]; // Primary gateway
 
 // OpenSea API configuration
 const OPENSEA_API_BASE = 'https://api.opensea.io/api/v2';
@@ -16,10 +21,12 @@ const CHAIN = 'ethereum'; // Chain identifier for OpenSea API
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadNFTData();
+    // Start loading data and listings in parallel
+    const [nftData] = await Promise.all([
+        loadNFTData(),
+        loadAllListings() // Load listings immediately, not after delay
+    ]);
     setupEventListeners();
-    // Load all active listings after a short delay
-    setTimeout(loadAllListings, 1000);
 });
 
 // Load and parse CSV data
@@ -622,15 +629,43 @@ function sortNFTs(sortBy) {
     }
 }
 
-// Render NFT cards
+// Render NFT cards with pagination for better performance
 function renderNFTs() {
     const grid = document.getElementById('nfts-grid');
     grid.innerHTML = '';
     
-    filteredNFTs.forEach(nft => {
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
+    
+    // Render first 100 NFTs immediately
+    const firstBatch = filteredNFTs.slice(0, 100);
+    firstBatch.forEach(nft => {
         const card = createNFTCard(nft);
-        grid.appendChild(card);
+        fragment.appendChild(card);
     });
+    grid.appendChild(fragment);
+    
+    // Render remaining NFTs in chunks
+    if (filteredNFTs.length > 100) {
+        let currentIndex = 100;
+        const renderChunk = () => {
+            const chunk = document.createDocumentFragment();
+            const endIndex = Math.min(currentIndex + 100, filteredNFTs.length);
+            
+            for (let i = currentIndex; i < endIndex; i++) {
+                const card = createNFTCard(filteredNFTs[i]);
+                chunk.appendChild(card);
+            }
+            
+            grid.appendChild(chunk);
+            currentIndex = endIndex;
+            
+            if (currentIndex < filteredNFTs.length) {
+                requestAnimationFrame(renderChunk);
+            }
+        };
+        requestAnimationFrame(renderChunk);
+    }
 }
 
 // Create NFT card element
@@ -652,8 +687,13 @@ function createNFTCard(nft) {
         }
     }
     
+    // Use placeholder and lazy load
     card.innerHTML = `
-        <img class="nft-image" src="${imageUrl}" alt="GVC #${nft.token_id}" loading="lazy">
+        <img class="nft-image" 
+             data-src="${imageUrl}" 
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f0f0f0'/%3E%3C/svg%3E"
+             alt="GVC #${nft.token_id}" 
+             loading="lazy">
         <div class="nft-info">
             <div class="nft-price-container">
                 <span class="nft-price" id="price-${nft.token_id}">${priceHTML}</span>
@@ -667,6 +707,28 @@ function createNFTCard(nft) {
             <div class="nft-title">${nft.token_id}</div>
         </div>
     `;
+    
+    // Lazy load the image when it comes into view
+    const img = card.querySelector('.nft-image');
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const image = entry.target;
+                    image.src = image.dataset.src;
+                    image.onload = () => image.classList.add('loaded');
+                    imageObserver.unobserve(image);
+                }
+            });
+        }, {
+            rootMargin: '50px 0px',
+            threshold: 0.01
+        });
+        imageObserver.observe(img);
+    } else {
+        // Fallback for browsers that don't support IntersectionObserver
+        img.src = img.dataset.src;
+    }
     
     return card;
 }
@@ -729,9 +791,9 @@ async function loadAllListings() {
                 updateListedFilter();
                 updateDisplay();
                 
-                // Add a small delay to avoid rate limits
+                // Reduce delay to speed up loading
                 if (nextCursor) {
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
             } else {
                 break;

@@ -320,6 +320,12 @@ body {
     aspect-ratio: 1 / 1;
     object-fit: contain;
     background: #f0f0f0;
+    transition: opacity 0.3s ease;
+    opacity: 0.8;
+}
+
+.nft-image.loaded {
+    opacity: 1;
 }
 
 .nft-info {
