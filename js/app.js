@@ -120,6 +120,8 @@ function extractFilterOptions() {
     // Define the hierarchical structure
     filterOptions = {
         gender: {},
+        type_color: {},
+        type_type: {},
         background: {
             main: {},
             byType: {}
@@ -135,10 +137,6 @@ function extractFilterOptions() {
         hair: {
             main: {},
             byType: {}
-        },
-        type: {
-            main: {},
-            byType: {}
         }
     };
     
@@ -146,6 +144,11 @@ function extractFilterOptions() {
         // Gender
         if (nft.gender) {
             filterOptions.gender[nft.gender] = (filterOptions.gender[nft.gender] || 0) + 1;
+        }
+        
+        // Type Color
+        if (nft.type_color) {
+            filterOptions.type_color[nft.type_color] = (filterOptions.type_color[nft.type_color] || 0) + 1;
         }
         
         // Background - hierarchical
@@ -200,17 +203,9 @@ function extractFilterOptions() {
             }
         }
         
-        // Type - hierarchical
+        // Type Type - simple
         if (nft.type_type) {
-            filterOptions.type.main[nft.type_type] = (filterOptions.type.main[nft.type_type] || 0) + 1;
-            
-            if (!filterOptions.type.byType[nft.type_type]) {
-                filterOptions.type.byType[nft.type_type] = {};
-            }
-            if (nft.type) {
-                filterOptions.type.byType[nft.type_type][nft.type] = 
-                    (filterOptions.type.byType[nft.type_type][nft.type] || 0) + 1;
-            }
+            filterOptions.type_type[nft.type_type] = (filterOptions.type_type[nft.type_type] || 0) + 1;
         }
     });
 }
@@ -251,31 +246,52 @@ function renderFilters() {
     listedFilterGroup.appendChild(listedOptionsContainer);
     container.appendChild(listedFilterGroup);
     
-    // Simple filters (Gender only)
+    // Gender filter
     const genderGroup = createSimpleFilterGroup(
         'gender', 
         'Gender',
-        filterOptions.gender
+        filterOptions.gender,
+        true // Add spacer for alignment
     );
     container.appendChild(genderGroup);
     
-    // Hierarchical filters (Background, Body, Face, Hair, Type)
+    // Type filter
+    const typeGroup = createSimpleFilterGroup(
+        'type_type', 
+        'Type',
+        filterOptions.type_type,
+        true // Add spacer for alignment
+    );
+    container.appendChild(typeGroup);
+    
+    // Type Color filter (after Type)
+    const typeColorGroup = createSimpleFilterGroup(
+        'type_color', 
+        'Type Color',
+        filterOptions.type_color,
+        true // Add spacer for alignment
+    );
+    container.appendChild(typeColorGroup);
+    
+    // Hierarchical filters (Body, Face, Hair)
     const hierarchicalFilters = [
-        { key: 'background', label: 'Background' },
         { key: 'body', label: 'Body' },
         { key: 'face', label: 'Face' },
-        { key: 'hair', label: 'Hair' },
-        { key: 'type', label: 'Type' }
+        { key: 'hair', label: 'Hair' }
     ];
     
     hierarchicalFilters.forEach(({ key, label }) => {
         const filterGroup = createHierarchicalFilterGroup(key, label, filterOptions[key]);
         container.appendChild(filterGroup);
     });
+    
+    // Background filter (last)
+    const backgroundGroup = createHierarchicalFilterGroup('background', 'Background', filterOptions.background);
+    container.appendChild(backgroundGroup);
 }
 
 // Create simple filter group
-function createSimpleFilterGroup(attribute, label, options) {
+function createSimpleFilterGroup(attribute, label, options, addSpacer = false) {
     const filterGroup = document.createElement('div');
     filterGroup.className = 'filter-group collapsed'; // Start collapsed
     
@@ -290,7 +306,7 @@ function createSimpleFilterGroup(attribute, label, options) {
     Object.entries(options)
         .sort((a, b) => b[1] - a[1])
         .forEach(([value, count]) => {
-            const optionDiv = createFilterOption(attribute, value, count, false);
+            const optionDiv = createFilterOption(attribute, value, count, false, addSpacer);
             optionsContainer.appendChild(optionDiv);
         });
     
@@ -392,9 +408,16 @@ function toggleCategory(categoryContainer) {
 }
 
 // Create individual filter option
-function createFilterOption(attribute, value, count, isSubFilter) {
+function createFilterOption(attribute, value, count, isSubFilter, addSpacer = false) {
     const optionDiv = document.createElement('div');
     optionDiv.className = isSubFilter ? 'filter-option sub-filter' : 'filter-option';
+    
+    // Add spacer for alignment if requested
+    if (addSpacer && !isSubFilter) {
+        const spacer = document.createElement('span');
+        spacer.className = 'category-arrow-spacer';
+        optionDiv.appendChild(spacer);
+    }
     
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
