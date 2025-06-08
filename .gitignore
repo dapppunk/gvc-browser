@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# API Keys and Config
+js/config.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Large data files
+data/ALL JPGS/
+data/ipfs_images/
+data/gvc_data_backup.csv
+data/gvc_data_before_color_clean.csv
+data/image_matches*.json
+data/matching_progress.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
