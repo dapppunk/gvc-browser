@@ -136,6 +136,7 @@ function extractFilterOptions() {
     filterOptions = {
         gender: {},
         color_group: {},
+        color_count: {},
         type_color: {},
         type_type: {},
         body_color: {},
@@ -168,6 +169,11 @@ function extractFilterOptions() {
         // Color Group
         if (nft.color_group) {
             filterOptions.color_group[nft.color_group] = (filterOptions.color_group[nft.color_group] || 0) + 1;
+        }
+        
+        // Color Count
+        if (nft.color_count !== undefined) {
+            filterOptions.color_count[nft.color_count] = (filterOptions.color_count[nft.color_count] || 0) + 1;
         }
         
         // Type Color
@@ -302,6 +308,21 @@ function renderFilters() {
         true // Add spacer for alignment
     );
     container.appendChild(colorGroupFilter);
+    
+    // Color Count filter - only show 3, 4, and 5
+    const filteredColorCountOptions = {};
+    ['3', '4', '5'].forEach(count => {
+        if (filterOptions.color_count[count]) {
+            filteredColorCountOptions[count] = filterOptions.color_count[count];
+        }
+    });
+    const colorCountFilter = createSimpleFilterGroup(
+        'color_count', 
+        'Color Count',
+        filteredColorCountOptions,
+        true // Add spacer for alignment
+    );
+    container.appendChild(colorCountFilter);
     
     // Type filter
     const typeGroup = createSimpleFilterGroup(
@@ -583,7 +604,7 @@ function applyFilters() {
     filteredNFTs = nftsToFilter.filter(nft => {
         // Search filter
         if (searchTerm) {
-            const searchableText = `${nft.token_id} ${nft.gender} ${nft.background} ${nft.body} ${nft.face} ${nft.hair} ${nft.type} ${nft.color_group || ''}`.toLowerCase();
+            const searchableText = `${nft.token_id} ${nft.gender} ${nft.background} ${nft.body} ${nft.face} ${nft.hair} ${nft.type} ${nft.color_group || ''} ${nft.color_count || ''}`.toLowerCase();
             if (!searchableText.includes(searchTerm)) {
                 return false;
             }
