@@ -53,4 +53,4 @@ Large CSV files are processed in Web Workers to maintain UI responsiveness. The 
 Multiple IPFS gateways configured for image loading resilience (`src/config.ts`).
 
 ## Environment Variables
-- `VITE_OPENSEA_API_KEY` - OpenSea API key for listing data
+- `OPENSEA_API_KEY` - OpenSea API key for listing data

@@ -38,7 +38,7 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const bestUrl = `${OPENSEA_API_BASE}/listings/collection/${OPENSEA_COLLECTION_SLUG}/best?limit=100`;
       const options = {
         headers: {
-          'X-API-KEY': import.meta.env.VITE_OPENSEA_API_KEY,
+          'X-API-KEY': import.meta.env.OPENSEA_API_KEY,
           'Accept': 'application/json',
         },
       };

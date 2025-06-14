@@ -57,7 +57,7 @@ A modern, feature-rich NFT browser application for exploring the Good Vibes Club
    
    Edit `.env` and add your OpenSea API key:
    ```
-   VITE_OPENSEA_API_KEY=your_opensea_api_key_here
+   OPENSEA_API_KEY=your_opensea_api_key_here
    ```
    
    > Get your API key from [OpenSea API Documentation](https://docs.opensea.io/reference/api-keys)
@@ -134,7 +134,7 @@ The application features a comprehensive badge system where NFTs can have up to 
 ## 🔧 Configuration
 
 ### Environment Variables
-- `VITE_OPENSEA_API_KEY` - OpenSea API key for market data
+- `OPENSEA_API_KEY` - OpenSea API key for market data
 
 ### Collection Configuration
 Edit `src/config.ts` to customize:

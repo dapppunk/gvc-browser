@@ -31,9 +31,9 @@ export function useListings(): UseListingsReturn {
 
   const loadListings = async () => {
     try {
-      const apiKey = import.meta.env.VITE_OPENSEA_API_KEY;
+      const apiKey = import.meta.env.OPENSEA_API_KEY;
       if (!apiKey) {
-        throw new Error("VITE_OPENSEA_API_KEY is missing. Please create a .env.local file in the react-app directory and add your key, e.g., VITE_OPENSEA_API_KEY=your_key_here");
+        throw new Error("OPENSEA_API_KEY is missing. Please create a .env.local file in the react-app directory and add your key, e.g., OPENSEA_API_KEY=your_key_here");
       }
 
       const url = `${CONFIG.OPENSEA_API_BASE}/listings/collection/${CONFIG.COLLECTION_SLUG}/best?limit=100`;
