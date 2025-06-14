@@ -33,7 +33,11 @@ jobs:
       - name: Build with Vite
         run: npm run build
         env:
-          OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
+          # Use either VITE_OPENSEA_API_KEY or OPENSEA_API_KEY from secrets
+          VITE_OPENSEA_API_KEY: ${{ secrets.VITE_OPENSEA_API_KEY || secrets.OPENSEA_API_KEY }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
