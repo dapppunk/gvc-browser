@@ -84,11 +84,18 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     loadAnalytics();
   }, []);
 
-  // Track new session
+  // Track new session (non-blocking)
   useEffect(() => {
     const initSession = async () => {
-      const country = await getVisitorCountry();
-      currentSession.country = country;
+      try {
+        // Add timeout to prevent blocking
+        const countryPromise = getVisitorCountry();
+        const timeoutPromise = new Promise<string>((resolve) => 
+          setTimeout(() => resolve('Unknown'), 2000)
+        );
+        
+        const country = await Promise.race([countryPromise, timeoutPromise]);
+        currentSession.country = country;
 
       setAnalytics(prev => {
         const isNewSession = !prev.sessions.find(s => 
@@ -119,9 +126,13 @@ export const AnalyticsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         
         return prev;
       });
+      } catch (error) {
+        console.warn('Failed to initialize analytics session:', error);
+      }
     };
 
-    initSession();
+    // Don't block initial render
+    setTimeout(initSession, 500);
   }, [currentSession]);
 
   const trackSearch = (query: string) => {

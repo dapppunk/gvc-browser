@@ -19,16 +19,47 @@ export async function detectUserLocation(): Promise<LocationInfo> {
     return cachedLocation;
   }
 
+  // Check localStorage cache first (faster for repeat visits)
+  try {
+    const stored = localStorage.getItem('user_location_cache');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const cacheAge = Date.now() - parsed.timestamp;
+      
+      // Use cache if less than 1 hour old
+      if (cacheAge < 3600000) {
+        cachedLocation = parsed.location;
+        return cachedLocation;
+      }
+    }
+  } catch (error) {
+    // Ignore cache errors
+  }
+
   // Return existing promise if detection is already in progress
   if (locationPromise) {
     return locationPromise;
   }
 
   locationPromise = detectLocationInternal();
-  const result = await locationPromise;
-  cachedLocation = result;
-  
-  return result;
+  try {
+    const result = await locationPromise;
+    cachedLocation = result;
+    
+    // Cache result in localStorage
+    try {
+      localStorage.setItem('user_location_cache', JSON.stringify({
+        location: result,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      // Ignore storage errors
+    }
+    
+    return result;
+  } finally {
+    locationPromise = null; // Reset promise for future attempts
+  }
 }
 
 async function detectLocationInternal(): Promise<LocationInfo> {
@@ -40,14 +71,20 @@ async function detectLocationInternal(): Promise<LocationInfo> {
   };
 
   try {
-    // Method 1: Try ipapi.co (most reliable)
+    // Method 1: Try ipapi.co (most reliable) with short timeout
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
       const response = await fetch('https://ipapi.co/json/', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();

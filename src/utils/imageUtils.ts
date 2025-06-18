@@ -119,8 +119,20 @@ export async function loadOptimalImage(
   preferWebP: boolean = true
 ): Promise<ImageLoadResult> {
   
-  // Check if user is from UAE and needs IPFS bypass
-  const isFromUAE = await needsIPFSBypass();
+  // Check if user is from UAE and needs IPFS bypass (with timeout to prevent blocking)
+  let isFromUAE = false;
+  try {
+    // Add timeout to prevent location detection from blocking
+    const locationPromise = needsIPFSBypass();
+    const timeoutPromise = new Promise<boolean>((resolve) => 
+      setTimeout(() => resolve(false), 2000) // 2 second timeout
+    );
+    
+    isFromUAE = await Promise.race([locationPromise, timeoutPromise]);
+  } catch (error) {
+    console.warn('Location detection failed, defaulting to non-UAE mode:', error);
+    isFromUAE = false;
+  }
   
   if (isFromUAE) {
     console.log(`UAE user detected for NFT ${tokenId}, using server-based images`);
@@ -267,7 +279,19 @@ export function cacheGatewayIndex(ipfsPath: string, gatewayIndex: number): void 
  * For modal/popup: UAE-aware high quality loading
  */
 export async function loadHighQualityImage(ipfsUrl: string): Promise<ImageLoadResult> {
-  const isFromUAE = await needsIPFSBypass();
+  let isFromUAE = false;
+  try {
+    // Add timeout to prevent location detection from blocking modal loading
+    const locationPromise = needsIPFSBypass();
+    const timeoutPromise = new Promise<boolean>((resolve) => 
+      setTimeout(() => resolve(false), 1000) // 1 second timeout for modal
+    );
+    
+    isFromUAE = await Promise.race([locationPromise, timeoutPromise]);
+  } catch (error) {
+    console.warn('Location detection failed for modal, defaulting to non-UAE mode:', error);
+    isFromUAE = false;
+  }
   
   if (isFromUAE) {
     // For UAE users, try server sources for high quality images

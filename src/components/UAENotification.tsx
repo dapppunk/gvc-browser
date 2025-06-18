@@ -20,22 +20,30 @@ const UAENotification: React.FC = () => {
   useEffect(() => {
     const checkUAEStatus = async () => {
       try {
-        const uaeStatus = await isUAEUser();
-        const userCountry = await getUserCountry();
+        // Add timeout to prevent blocking the UI
+        const uaePromise = isUAEUser();
+        const countryPromise = getUserCountry();
+        const timeoutPromise = new Promise<boolean>((resolve) => 
+          setTimeout(() => resolve(false), 3000)
+        );
         
-        setIsUAE(uaeStatus);
+        const uaeStatus = await Promise.race([uaePromise, timeoutPromise]);
+        const userCountry = await Promise.race([countryPromise, Promise.resolve('Unknown')]);
+        
+        setIsUAE(!!uaeStatus);
         setCountry(userCountry);
         
         if (uaeStatus && !dismissed) {
           // Show notification after a brief delay
-          setTimeout(() => setShowNotification(true), 2000);
+          setTimeout(() => setShowNotification(true), 3000);
         }
       } catch (error) {
         console.warn('Failed to check UAE status:', error);
       }
     };
 
-    checkUAEStatus();
+    // Don't block initial render - run asynchronously
+    setTimeout(checkUAEStatus, 1000);
   }, [dismissed]);
 
   const handleDismiss = () => {
