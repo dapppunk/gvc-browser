@@ -63,6 +63,7 @@ const NFTGrid: React.FC = () => {
   const [modalImageLoading, setModalImageLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [badgeData, setBadgeData] = useState<BadgeData>({});
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   const prevFilterString = useRef<string>('');
 
   useEffect(() => {
@@ -183,6 +184,13 @@ const NFTGrid: React.FC = () => {
     loadNFTs();
   }, []);
 
+  // Track when initial loading is complete
+  useEffect(() => {
+    if (!loading && !listingsLoading && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [loading, listingsLoading, hasInitiallyLoaded]);
+
   // Separate effect to reset scroll position only when filters change (not listings)
   useEffect(() => {
     // Only reset if we have NFTs loaded and filters have actually changed
@@ -291,8 +299,8 @@ const NFTGrid: React.FC = () => {
     // NFTCard handles its own loading state now
   }, []);
 
-  // Show animated loading screen when first loading (wait for both NFT data AND listings)
-  if (loading || listingsLoading) {
+  // Show animated loading screen only during initial load (wait for both NFT data AND listings)
+  if (!hasInitiallyLoaded && (loading || listingsLoading)) {
     return (
       <Box sx={{ 
         display: 'flex',
@@ -388,6 +396,44 @@ const NFTGrid: React.FC = () => {
   return (
     <>
       <FilterTags />
+      {/* Subtle background refresh indicator */}
+      {hasInitiallyLoaded && listingsLoading && (
+        <Box sx={{
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          zIndex: 1000,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          color: '#f74d71',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          fontSize: '0.875rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(247, 77, 113, 0.3)',
+          animation: 'slideIn 0.3s ease-out',
+          '@keyframes slideIn': {
+            '0%': { transform: 'translateX(100%)' },
+            '100%': { transform: 'translateX(0)' }
+          }
+        }}>
+          <Box sx={{
+            width: 12,
+            height: 12,
+            border: '2px solid rgba(247, 77, 113, 0.3)',
+            borderTop: '2px solid #f74d71',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            '@keyframes spin': {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' }
+            }
+          }} />
+          Updating prices...
+        </Box>
+      )}
       {listingsError && (
         <div style={{ 
           background: 'rgba(255, 0, 0, 0.1)', 
