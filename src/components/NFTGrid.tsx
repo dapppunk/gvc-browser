@@ -291,8 +291,8 @@ const NFTGrid: React.FC = () => {
     // NFTCard handles its own loading state now
   }, []);
 
-  // Show animated loading screen when first loading
-  if (loading) {
+  // Show animated loading screen when first loading (wait for both NFT data AND listings)
+  if (loading || listingsLoading) {
     return (
       <Box sx={{ 
         display: 'flex',
@@ -362,7 +362,10 @@ const NFTGrid: React.FC = () => {
             }
           }}
         >
-          Loading the vibes...
+          {loading && listingsLoading ? 'Loading NFTs and market data...' :
+           loading ? 'Loading NFT collection...' :
+           listingsLoading ? 'Fetching latest prices...' :
+           'Loading the vibes...'}
         </Typography>
       </Box>
     );
