@@ -197,7 +197,7 @@ const NFTGrid: React.FC = () => {
     }
   }, [filters, loading, nfts.length]);
 
-  // Effect for filtering and sorting (runs when filters or nfts change)
+  // Effect for filtering and sorting (runs when filters or nfts change, but NOT on every listings update)
   useEffect(() => {
     if (loading) return; // Don't filter until NFTs are loaded
     
@@ -215,7 +215,20 @@ const NFTGrid: React.FC = () => {
     
     setFilteredNfts(filtered);
     setFilteredCount(filtered.length); // Update filtered count in context
-  }, [filters, nfts, listings, loading, applyFilters, applySorting]);
+  }, [filters, nfts, loading, applyFilters, applySorting]); // Removed 'listings' dependency
+
+  // Separate effect to update listings without changing order
+  useEffect(() => {
+    if (filteredNfts.length > 0) {
+      // Only update the displayed NFTs with new listing info, don't re-sort
+      setFilteredNfts(prevFiltered => 
+        prevFiltered.map(nft => ({
+          ...nft,
+          listing: listings[nft.id]
+        }))
+      );
+    }
+  }, [listings]); // Only runs when listings change
 
   // Create a computed version of NFTs with current listings for rendering
   const nftsWithCurrentListings = filteredNfts.map(nft => ({
