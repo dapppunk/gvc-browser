@@ -1,9 +1,11 @@
 // Image utility functions for handling WebP and IPFS images
+import { needsIPFSBypass, isUAEUser } from './locationUtils';
 
 export interface ImageLoadResult {
   url: string;
   isWebP: boolean;
   success: boolean;
+  source: 'webp' | 'ipfs' | 'server' | 'cdn';
 }
 
 /**
@@ -11,6 +13,44 @@ export interface ImageLoadResult {
  */
 export function getWebPImageUrl(tokenId: string): string {
   return `${import.meta.env.BASE_URL}nfts/${tokenId}.webp`;
+}
+
+/**
+ * Generate UAE-friendly server-based image URL
+ * These images are served directly from your server instead of IPFS
+ */
+export function getUAEServerImageUrl(tokenId: string): string {
+  // Assuming you have a server endpoint that serves images for UAE users
+  return `${import.meta.env.BASE_URL}nfts/uae/${tokenId}.png`;
+}
+
+/**
+ * Generate CDN-based image URL as fallback for UAE users
+ */
+export function getCDNImageUrl(tokenId: string): string {
+  // Alternative CDN or direct server serving for UAE
+  return `${import.meta.env.BASE_URL}nfts/cdn/${tokenId}.jpg`;
+}
+
+/**
+ * Get IPFS hash from various URL formats and convert to direct server URL
+ */
+export function convertIPFSToServerUrl(ipfsUrl: string, tokenId: string): string {
+  if (!ipfsUrl || !tokenId) return '';
+  
+  // Extract IPFS hash
+  let ipfsHash = '';
+  if (ipfsUrl.startsWith('ipfs://')) {
+    ipfsHash = ipfsUrl.slice(7);
+  } else {
+    const match = ipfsUrl.match(/\/ipfs\/([^/?]+)/);
+    ipfsHash = match ? match[1] : '';
+  }
+  
+  if (!ipfsHash) return '';
+  
+  // Return server-hosted version for UAE users
+  return `${import.meta.env.BASE_URL}nfts/server/${tokenId}/${ipfsHash}.png`;
 }
 
 /**
@@ -71,7 +111,7 @@ export function testImageLoad(url: string, timeout: number = 3000): Promise<bool
 }
 
 /**
- * Smart image loading strategy: Try WebP first, fallback to IPFS
+ * Smart image loading strategy: UAE-aware with server fallbacks
  */
 export async function loadOptimalImage(
   tokenId: string, 
@@ -79,6 +119,80 @@ export async function loadOptimalImage(
   preferWebP: boolean = true
 ): Promise<ImageLoadResult> {
   
+  // Check if user is from UAE and needs IPFS bypass
+  const isFromUAE = await needsIPFSBypass();
+  
+  if (isFromUAE) {
+    console.log(`UAE user detected for NFT ${tokenId}, using server-based images`);
+    
+    // For UAE users, prioritize server-based images over IPFS
+    if (preferWebP) {
+      // Try WebP first (still works for UAE)
+      const webpUrl = getWebPImageUrl(tokenId);
+      const webpSuccess = await testImageLoad(webpUrl, 2000);
+      
+      if (webpSuccess) {
+        return {
+          url: webpUrl,
+          isWebP: true,
+          success: true,
+          source: 'webp'
+        };
+      }
+    }
+
+    // Try UAE-specific server URLs
+    const uaeUrls = [
+      getUAEServerImageUrl(tokenId),
+      getCDNImageUrl(tokenId),
+      convertIPFSToServerUrl(ipfsUrl, tokenId)
+    ];
+
+    for (const serverUrl of uaeUrls) {
+      if (serverUrl) {
+        const success = await testImageLoad(serverUrl, 3000);
+        if (success) {
+          return {
+            url: serverUrl,
+            isWebP: false,
+            success: true,
+            source: 'server'
+          };
+        }
+      }
+    }
+
+    // Last resort: try a few non-IPFS image sources
+    const fallbackUrls = [
+      `${import.meta.env.BASE_URL}nfts/fallback/${tokenId}.png`,
+      `https://cdn.goodvibesclub.io/nfts/${tokenId}.png`, // External CDN fallback
+      `https://assets.goodvibesclub.io/${tokenId}.jpg`     // Alternative asset server
+    ];
+
+    for (const fallbackUrl of fallbackUrls) {
+      const success = await testImageLoad(fallbackUrl, 2000);
+      if (success) {
+        return {
+          url: fallbackUrl,
+          isWebP: false,
+          success: true,
+          source: 'cdn'
+        };
+      }
+    }
+
+    console.warn(`All UAE-friendly sources failed for NFT ${tokenId}`);
+    
+    // Return failed result for UAE users - don't try IPFS
+    return {
+      url: '',
+      isWebP: false,
+      success: false,
+      source: 'server'
+    };
+  }
+
+  // Standard flow for non-UAE users
   if (preferWebP) {
     // Try WebP first
     const webpUrl = getWebPImageUrl(tokenId);
@@ -88,12 +202,13 @@ export async function loadOptimalImage(
       return {
         url: webpUrl,
         isWebP: true,
-        success: true
+        success: true,
+        source: 'webp'
       };
     }
   }
 
-  // Fallback to IPFS with gateway rotation
+  // Fallback to IPFS with gateway rotation (only for non-UAE users)
   const IPFS_GATEWAYS = [
     'https://ipfs.io/ipfs/',
     'https://ipfs.filebase.io/ipfs/',
@@ -112,7 +227,8 @@ export async function loadOptimalImage(
       return {
         url: ipfsImageUrl,
         isWebP: false,
-        success: true
+        success: true,
+        source: 'ipfs'
       };
     }
   }
@@ -121,7 +237,8 @@ export async function loadOptimalImage(
   return {
     url: '',
     isWebP: false,
-    success: false
+    success: false,
+    source: 'ipfs'
   };
 }
 
@@ -147,10 +264,44 @@ export function cacheGatewayIndex(ipfsPath: string, gatewayIndex: number): void 
 }
 
 /**
- * For modal/popup: Always prefer IPFS for highest quality
+ * For modal/popup: UAE-aware high quality loading
  */
 export async function loadHighQualityImage(ipfsUrl: string): Promise<ImageLoadResult> {
+  const isFromUAE = await needsIPFSBypass();
+  
+  if (isFromUAE) {
+    // For UAE users, try server sources for high quality images
+    const tokenId = extractTokenIdFromIPFS(ipfsUrl);
+    if (tokenId) {
+      return loadOptimalImage(tokenId, ipfsUrl, false);
+    }
+  }
+  
   return loadOptimalImage('', ipfsUrl, false); // preferWebP = false for high quality
+}
+
+/**
+ * Extract token ID from IPFS URL patterns (helper function)
+ */
+function extractTokenIdFromIPFS(ipfsUrl: string): string {
+  // Try to extract token ID from common IPFS URL patterns
+  const patterns = [
+    /\/(\d+)\.png$/,
+    /\/(\d+)\.jpg$/,
+    /\/(\d+)\.jpeg$/,
+    /\/(\d+)$/,
+    /token[_-]?(\d+)/i,
+    /nft[_-]?(\d+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = ipfsUrl.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return '';
 }
 
 /**

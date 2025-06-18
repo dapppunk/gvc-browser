@@ -8,6 +8,7 @@ import FilterSidebar from './components/FilterSidebar';
 import ThemeToggle from './components/Navbar/ThemeToggle';
 import BugReportButton from './components/BugReportButton';
 import StatsPanel from './components/StatsPanel';
+import UAENotification from './components/UAENotification';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -619,6 +620,7 @@ const AppContent: React.FC = () => {
           
           <BugReportButton />
           <StatsPanel />
+          <UAENotification />
         </div>
         </AnalyticsProvider>
       </FiltersProvider>

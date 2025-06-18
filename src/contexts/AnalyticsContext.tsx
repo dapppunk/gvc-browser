@@ -32,14 +32,20 @@ const generateSessionId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-// Get visitor's country (simplified - in production would use IP geolocation)
+// Get visitor's country using the shared location utility
 const getVisitorCountry = async (): Promise<string> => {
   try {
-    const response = await fetch('https://ipapi.co/json/');
-    const data = await response.json();
-    return data.country_name || 'Unknown';
+    // Use the existing location detection system
+    const { getUserCountry } = await import('../utils/locationUtils');
+    return await getUserCountry();
   } catch {
-    return 'Unknown';
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      return data.country_name || 'Unknown';
+    } catch {
+      return 'Unknown';
+    }
   }
 };
 
