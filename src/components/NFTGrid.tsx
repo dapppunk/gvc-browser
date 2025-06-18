@@ -291,18 +291,80 @@ const NFTGrid: React.FC = () => {
     // NFTCard handles its own loading state now
   }, []);
 
-  // Show initial loading skeletons only when first loading
+  // Show animated loading screen when first loading
   if (loading) {
     return (
-      <div className="nft-grid">
-        {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-          <Box key={i} sx={{ width: '100%' }}>
-            <Skeleton variant="rectangular" sx={{ width: '100%', pt: '100%', borderRadius: 2, mb: 2, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Skeleton variant="text" sx={{ width: '80%', height: 32, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Skeleton variant="text" sx={{ width: '60%', height: 24, bgcolor: 'rgba(255,255,255,0.08)' }} />
-          </Box>
-        ))}
-      </div>
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh',
+        textAlign: 'center'
+      }}>
+        <Typography 
+          variant="h1" 
+          sx={{ 
+            mb: 4,
+            background: 'linear-gradient(45deg, #ffa300, #f74d71)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: 700,
+            fontSize: { xs: '3rem', md: '4rem', lg: '5rem' },
+            animation: 'pulse 2s ease-in-out infinite alternate',
+            '@keyframes pulse': {
+              '0%': { 
+                transform: 'scale(1)',
+                filter: 'brightness(1)'
+              },
+              '100%': { 
+                transform: 'scale(1.05)',
+                filter: 'brightness(1.2)'
+              }
+            }
+          }}
+        >
+          Impending Vibes
+        </Typography>
+        <Box sx={{
+          position: 'relative',
+          width: '200px',
+          height: '4px',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '2px',
+          overflow: 'hidden',
+          mb: 2
+        }}>
+          <Box sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '100%',
+            background: 'linear-gradient(90deg, #ffa300, #f74d71)',
+            borderRadius: '2px',
+            animation: 'loading 2s ease-in-out infinite',
+            '@keyframes loading': {
+              '0%': { width: '20%', left: '0%' },
+              '50%': { width: '60%', left: '20%' },
+              '100%': { width: '20%', left: '80%' }
+            }
+          }} />
+        </Box>
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            color: 'var(--text-secondary, #aaa)',
+            fontSize: '1.1rem',
+            animation: 'fadeInOut 3s ease-in-out infinite',
+            '@keyframes fadeInOut': {
+              '0%, 100%': { opacity: 0.6 },
+              '50%': { opacity: 1 }
+            }
+          }}
+        >
+          Loading the vibes...
+        </Typography>
+      </Box>
     );
   }
 
@@ -347,31 +409,6 @@ const NFTGrid: React.FC = () => {
           </Button>
         </div>
       )}
-      {loading && (
-        <Box sx={{ 
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          textAlign: 'center'
-        }}>
-          <Typography 
-            variant="h3" 
-            sx={{ 
-              mb: 3,
-              background: 'linear-gradient(45deg, #ffa300, #f74d71)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 700,
-              fontSize: { xs: '2rem', md: '3rem' }
-            }}
-          >
-            Impending Vibes
-          </Typography>
-          <Mosaic color="#f74d71" size="large" text="" textColor="" />
-        </Box>
-      )}
       {nftsWithCurrentListings.length === 0 && !loading && (
         <Box sx={{ 
           textAlign: 'center', 
@@ -390,7 +427,22 @@ const NFTGrid: React.FC = () => {
           </Typography>
         </Box>
       )}
-      <div className="nft-grid">
+      <Box 
+        className="nft-grid"
+        sx={{
+          animation: 'fadeIn 0.8s ease-out',
+          '@keyframes fadeIn': {
+            '0%': { 
+              opacity: 0,
+              transform: 'translateY(20px)'
+            },
+            '100%': { 
+              opacity: 1,
+              transform: 'translateY(0)'
+            }
+          }
+        }}
+      >
         {nftsWithCurrentListings.slice(0, visibleCount).map(nft => (
           <NFTCard
             key={nft.id}
@@ -438,7 +490,7 @@ const NFTGrid: React.FC = () => {
             )}
           </Box>
         )}
-      </div>
+      </Box>
       <Dialog open={!!selectedNFT} onClose={handleClose} maxWidth="md" fullWidth>
         {selectedNFT && (
           <Box sx={{
