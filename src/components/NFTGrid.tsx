@@ -76,12 +76,33 @@ const NFTGrid: React.FC = () => {
       if (selectedNFT && selectedNFT.image) {
         setModalImageLoading(true);
         try {
+          // Check if user is from UAE and use optimized loading
           const result = await loadHighQualityImage(selectedNFT.image);
           if (result.success) {
+            console.log(`Modal: ${result.isWebP ? 'WebP' : 'IPFS'} image loaded for NFT ${selectedNFT.id}`);
             setModalImageUrl(result.url);
           } else {
-            // Fallback to original image if IPFS fails
-            setModalImageUrl(selectedNFT.image);
+            console.warn(`Modal: High-quality image loading failed for NFT ${selectedNFT.id}, using fallback`);
+            // For UAE users, never fallback to IPFS - try WebP directly
+            const { needsIPFSBypass } = await import('../utils/locationUtils');
+            const isUAE = await needsIPFSBypass().catch(() => false);
+            
+            if (isUAE && selectedNFT.id) {
+              const { getWebPImageUrl, testImageLoad } = await import('../utils/imageUtils');
+              const webpUrl = getWebPImageUrl(selectedNFT.id);
+              const webpWorks = await testImageLoad(webpUrl, 3000);
+              
+              if (webpWorks) {
+                console.log(`Modal: UAE fallback to WebP successful for NFT ${selectedNFT.id}`);
+                setModalImageUrl(webpUrl);
+              } else {
+                console.error(`Modal: UAE WebP fallback failed for NFT ${selectedNFT.id}`);
+                setModalImageUrl(''); // Don't show broken IPFS image for UAE users
+              }
+            } else {
+              // Non-UAE users can fallback to original IPFS
+              setModalImageUrl(selectedNFT.image);
+            }
           }
         } catch (error) {
           console.error('Modal image loading error:', error);
@@ -558,9 +579,9 @@ const NFTGrid: React.FC = () => {
                   <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Mosaic color="#f74d71" size="medium" text="" textColor="" />
                   </Box>
-                ) : (
+                ) : modalImageUrl ? (
                   <img
-                    src={modalImageUrl || selectedNFT.image}
+                    src={modalImageUrl}
                     alt={selectedNFT.name}
                     style={{ 
                       width: '100%', 
@@ -569,14 +590,58 @@ const NFTGrid: React.FC = () => {
                       borderRadius: 16, 
                       background: '#181a20'
                     }}
-                    onError={(e) => {
-                      // Fallback to original image if high-quality fails
+                    onError={async (e) => {
+                      // Enhanced error handling for UAE users
                       const target = e.target as HTMLImageElement;
-                      if (target.src !== selectedNFT.image) {
-                        target.src = selectedNFT.image;
+                      console.warn(`Modal image failed to load: ${target.src}`);
+                      
+                      // Check if user is from UAE
+                      const { needsIPFSBypass } = await import('../utils/locationUtils');
+                      const isUAE = await needsIPFSBypass().catch(() => false);
+                      
+                      if (isUAE && selectedNFT.id) {
+                        // For UAE users, try WebP fallback if not already tried
+                        const { getWebPImageUrl, testImageLoad } = await import('../utils/imageUtils');
+                        const webpUrl = getWebPImageUrl(selectedNFT.id);
+                        
+                        if (target.src !== webpUrl) {
+                          console.log(`Trying WebP fallback for UAE user: ${webpUrl}`);
+                          const webpWorks = await testImageLoad(webpUrl, 2000);
+                          if (webpWorks) {
+                            target.src = webpUrl;
+                            return;
+                          }
+                        }
+                        
+                        // If WebP also fails, hide the image rather than showing broken IPFS
+                        target.style.display = 'none';
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #181a20; color: #fff; font-size: 14px; border-radius: 16px;';
+                        errorDiv.textContent = 'Image optimized for your region is currently unavailable';
+                        target.parentElement?.appendChild(errorDiv);
+                      } else {
+                        // For non-UAE users, fallback to original IPFS image
+                        if (target.src !== selectedNFT.image) {
+                          target.src = selectedNFT.image;
+                        }
                       }
                     }}
                   />
+                ) : (
+                  <Box sx={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: '#181a20', 
+                    color: '#fff', 
+                    fontSize: '14px',
+                    textAlign: 'center',
+                    p: 2
+                  }}>
+                    Image not available
+                  </Box>
                 )}
               </Box>
               {/* Badges section */}

@@ -135,25 +135,25 @@ export async function loadOptimalImage(
   }
   
   if (isFromUAE) {
-    console.log(`UAE user detected for NFT ${tokenId}, using server-based images`);
+    console.log(`UAE user detected for NFT ${tokenId}, using only server-based images (NO IPFS)`);
     
-    // For UAE users, prioritize server-based images over IPFS
-    if (preferWebP) {
-      // Try WebP first (still works for UAE)
-      const webpUrl = getWebPImageUrl(tokenId);
-      const webpSuccess = await testImageLoad(webpUrl, 2000);
-      
-      if (webpSuccess) {
-        return {
-          url: webpUrl,
-          isWebP: true,
-          success: true,
-          source: 'webp'
-        };
-      }
+    // For UAE users, ALWAYS try WebP first regardless of preferWebP setting
+    const webpUrl = getWebPImageUrl(tokenId);
+    const webpSuccess = await testImageLoad(webpUrl, 4000); // Longer timeout for WebP
+    
+    if (webpSuccess) {
+      console.log(`UAE user: WebP loaded successfully for NFT ${tokenId}`);
+      return {
+        url: webpUrl,
+        isWebP: true,
+        success: true,
+        source: 'webp'
+      };
     }
 
-    // Try UAE-specific server URLs
+    console.warn(`UAE user: WebP failed for NFT ${tokenId}, trying alternative sources`);
+
+    // Try UAE-specific server URLs (only if WebP fails)
     const uaeUrls = [
       getUAEServerImageUrl(tokenId),
       getCDNImageUrl(tokenId),
@@ -162,8 +162,10 @@ export async function loadOptimalImage(
 
     for (const serverUrl of uaeUrls) {
       if (serverUrl) {
+        console.log(`UAE user: Trying server URL: ${serverUrl}`);
         const success = await testImageLoad(serverUrl, 3000);
         if (success) {
+          console.log(`UAE user: Server URL loaded successfully: ${serverUrl}`);
           return {
             url: serverUrl,
             isWebP: false,
@@ -177,13 +179,15 @@ export async function loadOptimalImage(
     // Last resort: try a few non-IPFS image sources
     const fallbackUrls = [
       `${import.meta.env.BASE_URL}nfts/fallback/${tokenId}.png`,
-      `https://cdn.goodvibesclub.io/nfts/${tokenId}.png`, // External CDN fallback
-      `https://assets.goodvibesclub.io/${tokenId}.jpg`     // Alternative asset server
+      `${import.meta.env.BASE_URL}nfts/${tokenId}.png`, // Try PNG version
+      `${import.meta.env.BASE_URL}nfts/${tokenId}.jpg`, // Try JPG version
     ];
 
     for (const fallbackUrl of fallbackUrls) {
+      console.log(`UAE user: Trying fallback URL: ${fallbackUrl}`);
       const success = await testImageLoad(fallbackUrl, 2000);
       if (success) {
+        console.log(`UAE user: Fallback URL loaded successfully: ${fallbackUrl}`);
         return {
           url: fallbackUrl,
           isWebP: false,
@@ -193,9 +197,9 @@ export async function loadOptimalImage(
       }
     }
 
-    console.warn(`All UAE-friendly sources failed for NFT ${tokenId}`);
+    console.error(`UAE user: ALL server sources failed for NFT ${tokenId} - NEVER trying IPFS`);
     
-    // Return failed result for UAE users - don't try IPFS
+    // Return failed result for UAE users - NEVER try IPFS
     return {
       url: '',
       isWebP: false,
@@ -205,18 +209,21 @@ export async function loadOptimalImage(
   }
 
   // Standard flow for non-UAE users
-  if (preferWebP) {
-    // Try WebP first
+  if (preferWebP && tokenId) {
+    // Try WebP first (only if we have a token ID)
     const webpUrl = getWebPImageUrl(tokenId);
-    const webpSuccess = await testImageLoad(webpUrl, 2000);
+    const webpSuccess = await testImageLoad(webpUrl, 3000); // Increased timeout
     
     if (webpSuccess) {
+      console.log(`Non-UAE user: WebP loaded successfully for NFT ${tokenId}`);
       return {
         url: webpUrl,
         isWebP: true,
         success: true,
         source: 'webp'
       };
+    } else {
+      console.warn(`Non-UAE user: WebP failed for NFT ${tokenId}, falling back to IPFS`);
     }
   }
 
@@ -294,37 +301,96 @@ export async function loadHighQualityImage(ipfsUrl: string): Promise<ImageLoadRe
   }
   
   if (isFromUAE) {
-    // For UAE users, try server sources for high quality images
+    console.log('UAE user detected for modal, using WebP instead of IPFS');
+    
+    // For UAE users, try to extract token ID and use WebP
     const tokenId = extractTokenIdFromIPFS(ipfsUrl);
     if (tokenId) {
-      return loadOptimalImage(tokenId, ipfsUrl, false);
+      // Try WebP first for UAE users in modal
+      const webpUrl = getWebPImageUrl(tokenId);
+      const webpSuccess = await testImageLoad(webpUrl, 3000);
+      
+      if (webpSuccess) {
+        return {
+          url: webpUrl,
+          isWebP: true,
+          success: true,
+          source: 'webp'
+        };
+      }
+      
+      // If WebP fails, try other server sources
+      return loadOptimalImage(tokenId, ipfsUrl, true); // preferWebP = true for UAE
     }
+    
+    // If no token ID found, return failed result - don't try IPFS for UAE
+    console.warn('Could not extract token ID for UAE user modal image');
+    return {
+      url: '',
+      isWebP: false,
+      success: false,
+      source: 'server'
+    };
   }
   
+  // For non-UAE users, use original IPFS logic
   return loadOptimalImage('', ipfsUrl, false); // preferWebP = false for high quality
 }
 
 /**
  * Extract token ID from IPFS URL patterns (helper function)
  */
-function extractTokenIdFromIPFS(ipfsUrl: string): string {
+export function extractTokenIdFromIPFS(ipfsUrl: string): string {
+  if (!ipfsUrl) return '';
+  
   // Try to extract token ID from common IPFS URL patterns
   const patterns = [
-    /\/(\d+)\.png$/,
-    /\/(\d+)\.jpg$/,
-    /\/(\d+)\.jpeg$/,
+    /\/(\d+)\.png$/i,
+    /\/(\d+)\.jpg$/i,
+    /\/(\d+)\.jpeg$/i,
+    /\/(\d+)\.webp$/i,
     /\/(\d+)$/,
     /token[_-]?(\d+)/i,
-    /nft[_-]?(\d+)/i
+    /nft[_-]?(\d+)/i,
+    /#(\d+)/,  // Sometimes token ID is in hash
+    /id[_-]?(\d+)/i,
+    /(\d+)[_-]?\.png/i,
+    /(\d+)[_-]?\.jpg/i,
+    /\/(\d{1,5})\//,  // Token ID in path segment
+    /(\d{1,5})/g  // Any 1-5 digit number (last resort)
   ];
   
   for (const pattern of patterns) {
-    const match = ipfsUrl.match(pattern);
-    if (match && match[1]) {
-      return match[1];
+    const matches = ipfsUrl.match(pattern);
+    if (matches) {
+      // For global pattern, check all matches
+      if (pattern.global) {
+        const allMatches = [...ipfsUrl.matchAll(pattern)];
+        for (const match of allMatches) {
+          if (match[1]) {
+            const tokenId = match[1];
+            const num = parseInt(tokenId);
+            if (num >= 1 && num <= 10000) {
+              console.log(`Extracted token ID ${tokenId} from IPFS URL: ${ipfsUrl}`);
+              return tokenId;
+            }
+          }
+        }
+      } else {
+        // For non-global patterns
+        if (matches[1]) {
+          const tokenId = matches[1];
+          const num = parseInt(tokenId);
+          if (num >= 1 && num <= 10000) {
+            console.log(`Extracted token ID ${tokenId} from IPFS URL: ${ipfsUrl}`);
+            return tokenId;
+          }
+        }
+      }
     }
   }
   
+  console.warn('Could not extract valid token ID from IPFS URL:', ipfsUrl);
   return '';
 }
 
