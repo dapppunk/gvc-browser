@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ListingsProvider, useListings } from './contexts/ListingsContext';
 import { FiltersProvider, useFilters, SearchSuggestion } from './contexts/FiltersContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AnalyticsProvider, useAnalytics } from './contexts/AnalyticsContext';
 import NFTGrid from './components/NFTGrid';
 import FilterSidebar from './components/FilterSidebar';
 import ThemeToggle from './components/Navbar/ThemeToggle';
 import BugReportButton from './components/BugReportButton';
+import StatsPanel from './components/StatsPanel';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -36,10 +38,12 @@ interface HeaderProps {
 const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) => {
   const { filters, setFilter, totalNfts, filteredCount, getSearchSuggestions } = useFilters();
   const { listings, isLoading: listingsLoading } = useListings();
+  const { trackSearch, trackFilter, setShowStatsPanel } = useAnalytics();
   const [searchValue, setSearchValue] = useState(filters.search || '');
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeSearchFilter, setActiveSearchFilter] = useState<SearchSuggestion | null>(null);
+  const [logoClickCount, setLogoClickCount] = useState(0);
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // 768px and below
@@ -50,10 +54,14 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setFilter('search', searchValue);
+      // Track search analytics
+      if (searchValue.trim()) {
+        trackSearch(searchValue);
+      }
     }, 300); // Debounce search
     
     return () => clearTimeout(timeoutId);
-  }, [searchValue, setFilter]);
+  }, [searchValue, setFilter, trackSearch]);
 
   // Update search suggestions when search value changes (but not when dropdown is open and scrolling)
   useEffect(() => {
@@ -205,6 +213,22 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
     }
   };
 
+  // Handle logo clicks for stats panel access
+  const handleLogoClick = () => {
+    const newCount = logoClickCount + 1;
+    setLogoClickCount(newCount);
+    
+    if (newCount === 10) {
+      setShowStatsPanel(true);
+      setLogoClickCount(0); // Reset counter
+    }
+    
+    // Reset counter after 5 seconds if not reached 10
+    setTimeout(() => {
+      setLogoClickCount(0);
+    }, 5000);
+  };
+
   return (
     <AppBar 
       position="static" 
@@ -225,7 +249,16 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
       }}>
         {/* Left section - Brand and Show Filters */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+            onClick={handleLogoClick}
+          >
             <Box
               component="img"
               src={`${import.meta.env.BASE_URL}badges/any_gvc.png`}
@@ -440,7 +473,10 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
             <Select
               value={filters.sort}
               label="Sort"
-              onChange={(e) => setFilter('sort', e.target.value)}
+              onChange={(e) => {
+                setFilter('sort', e.target.value);
+                trackFilter(`Sort: ${e.target.value}`);
+              }}
               sx={{
                 color: '#fff', // Always white in nav
                 backgroundColor: 'rgba(255,255,255,0.05)',
@@ -530,7 +566,8 @@ const AppContent: React.FC = () => {
   return (
     <ListingsProvider>
       <FiltersProvider>
-        <div className="app">
+        <AnalyticsProvider>
+          <div className="app">
           <AppHeader isFiltersOpen={isFiltersOpen} setIsFiltersOpen={setIsFiltersOpen} />
 
           <div className="main-container">
@@ -581,7 +618,9 @@ const AppContent: React.FC = () => {
           </div>
           
           <BugReportButton />
+          <StatsPanel />
         </div>
+        </AnalyticsProvider>
       </FiltersProvider>
     </ListingsProvider>
   );
