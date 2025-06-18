@@ -122,10 +122,10 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     loadListings();
     
-    // Set up 60-second refresh interval
+    // Set up 3-minute refresh interval
     const refreshInterval = setInterval(() => {
       loadListings();
-    }, 60000); // 60 seconds
+    }, 180000); // 3 minutes
 
     return () => {
       clearInterval(refreshInterval);
