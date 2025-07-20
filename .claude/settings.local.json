@@ -21,7 +21,11 @@
       "Bash(node:*)",
       "Bash(npx:*)",
       "Bash(NPM_CONFIG_CACHE=/tmp/.npm-cache npm install)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(cat:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
