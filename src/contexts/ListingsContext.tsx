@@ -217,54 +217,105 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
 
     try {
-      // Magic Eden API v2 for Ethereum collections
-      const collectionSymbol = 'good-vibes-club'; // Magic Eden uses collection symbols
-      const url = `${MAGICEDEN_API_BASE}/collections/${collectionSymbol}/listings`;
+      // Magic Eden API for Ethereum collections
+      // Try multiple endpoints as Magic Eden's API structure can vary
+      const endpoints = [
+        // V3 RTP endpoint for Ethereum
+        `${MAGICEDEN_API_BASE.replace('/v2', '/v3/rtp')}/ethereum/tokens/listings?collectionSymbol=good-vibes-club&limit=200`,
+        // Alternative v2 endpoint with chain parameter
+        `${MAGICEDEN_API_BASE}/collections/good-vibes-club/listings?chain=ethereum&limit=200`,
+        // Contract-based endpoint
+        `${MAGICEDEN_API_BASE.replace('/v2', '/v3/rtp')}/ethereum/tokens/listings?contract=${COLLECTION_CONTRACT}&limit=200`,
+        // Token listings endpoint with filters
+        `${MAGICEDEN_API_BASE}/tokens?collection=good-vibes-club&showAll=false&onSaleOnly=true&limit=200`,
+        // Collection items endpoint
+        `${MAGICEDEN_API_BASE}/collections/ethereum/good-vibes-club/items?limit=200`
+      ];
       
-      console.log('Fetching Magic Eden listings from:', url);
-
-      const response = await fetch(url, options);
+      let data: any = null;
+      let successfulEndpoint = null;
       
-      if (response.ok) {
-        const data = await response.json();
+      // Try each endpoint until one works
+      for (const url of endpoints) {
+        console.log('Trying Magic Eden endpoint:', url);
+        try {
+          const response = await fetch(url, options);
+          
+          if (response.ok) {
+            data = await response.json();
+            successfulEndpoint = url;
+            console.log('Magic Eden API success with endpoint:', url);
+            break;
+          } else {
+            console.log(`Magic Eden endpoint failed (${response.status}):`, url);
+            if (response.status === 401) {
+              console.error('Magic Eden API key may be invalid');
+            }
+          }
+        } catch (err) {
+          console.log('Magic Eden endpoint error:', url, err);
+        }
+      }
+      
+      if (data) {
         console.log('Magic Eden API response:', data);
         
         // Process the response based on the actual structure
-        if (Array.isArray(data)) {
-          // If data is directly an array of listings
-          data.forEach((listing: any) => {
-            // Magic Eden v2 listing structure
-            if (listing.price && listing.tokenAddress === COLLECTION_CONTRACT) {
-              const tokenId = String(listing.tokenId);
-              const priceValue = parseFloat(listing.price);
-              
-              if (!isNaN(priceValue) && priceValue > 0) {
-                const url = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
-                
-                magicEdenListings[tokenId] = {
-                  price: priceValue,
-                  currency: 'ETH',
-                  url,
-                  marketplace: 'magiceden'
-                };
-              }
+        // Handle different possible response formats from Magic Eden
+        const listings = Array.isArray(data) ? data : (data.results || data.listings || []);
+        
+        listings.forEach((listing: any) => {
+          try {
+            // Extract token ID - could be in different fields
+            const tokenId = String(
+              listing.tokenId || 
+              listing.token_id || 
+              listing.id || 
+              (listing.tokenMint && listing.tokenMint.split(':').pop()) ||
+              (listing.token && listing.token.tokenId)
+            );
+            
+            // Extract price - could be in different fields and formats
+            let priceValue = 0;
+            if (listing.price) {
+              priceValue = typeof listing.price === 'object' ? 
+                parseFloat(listing.price.amount || listing.price.value) : 
+                parseFloat(listing.price);
+            } else if (listing.listedPrice) {
+              priceValue = parseFloat(listing.listedPrice);
+            } else if (listing.amount) {
+              priceValue = parseFloat(listing.amount);
             }
-          });
-          
-          if (data.length === 0) {
-            console.log('No Magic Eden listings found for this collection');
+            
+            // Check if it's in wei and convert to ETH
+            if (priceValue > 1000) {
+              priceValue = priceValue / Math.pow(10, 18);
+            }
+            
+            if (tokenId && !isNaN(priceValue) && priceValue > 0) {
+              const url = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+              
+              magicEdenListings[tokenId] = {
+                price: priceValue,
+                currency: 'ETH',
+                url,
+                marketplace: 'magiceden'
+              };
+              
+              console.log(`Added Magic Eden listing: Token ${tokenId}, Price: ${priceValue} ETH`);
+            }
+          } catch (err) {
+            console.warn('Error parsing Magic Eden listing:', listing, err);
           }
+        });
+        
+        if (Object.keys(magicEdenListings).length === 0) {
+          console.log('No valid Magic Eden listings found for this collection');
+        } else {
+          console.log(`Found ${Object.keys(magicEdenListings).length} Magic Eden listings`);
         }
       } else {
-        console.error('Magic Eden API error:', response.status, response.statusText);
-        const errorText = await response.text();
-        console.error('Magic Eden error details:', errorText);
-        
-        // If the token endpoint doesn't work, try the marketplace endpoint
-        if (response.status === 400 || response.status === 404) {
-          console.log('Trying alternative Magic Eden endpoint...');
-          // You could add fallback logic here
-        }
+        console.error('Failed to fetch Magic Eden listings from any endpoint');
       }
     } catch (error) {
       console.error('Error fetching Magic Eden listings:', error);
