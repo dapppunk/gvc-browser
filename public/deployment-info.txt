@@ -1,0 +1,5 @@
+Deployment Information
+=====================
+Last Updated: 2025-07-20 15:25 UTC
+Worker URL: https://gvc-opensea-proxy.h4shkid.workers.dev
+Status: Using Cloudflare Worker for API calls
