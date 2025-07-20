@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Worker Test - Direct</title>
+</head>
+<body>
+    <h1>Testing Cloudflare Worker Directly</h1>
+    <button onclick="testWorker()">Test Worker</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testWorker() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Testing worker...\n';
+            
+            try {
+                const response = await fetch('https://gvc-opensea-proxy.h4shkid.workers.dev/listings/collection/good-vibes-club/best?limit=1');
+                resultEl.textContent += `Status: ${response.status}\n`;
+                
+                const data = await response.json();
+                resultEl.textContent += JSON.stringify(data, null, 2);
+                
+                if (data.listings && data.listings.length > 0) {
+                    resultEl.textContent += '\n\n✅ Worker is functioning correctly!';
+                    resultEl.textContent += '\nPrice: ' + data.listings[0].price.current.value;
+                }
+            } catch (error) {
+                resultEl.textContent += '❌ Error: ' + error.message;
+            }
+        }
+        
+        // Test on load
+        window.onload = testWorker;
+    </script>
+</body>
+</html>
