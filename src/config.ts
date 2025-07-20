@@ -11,7 +11,7 @@ export const CONFIG = {
   MAGICEDEN_API_BASE: import.meta.env.VITE_MAGICEDEN_PROXY_URL || 
     (import.meta.env.DEV 
       ? '/api/magiceden' // Local dev proxy
-      : 'https://api-mainnet.magiceden.dev/v3'), // Direct API for production
+      : 'https://api-mainnet.magiceden.dev/v2'), // Direct API for production
   MAGICEDEN_API_KEY: import.meta.env.VITE_MAGICEDEN_API_KEY || '',
   
   // Collection Information

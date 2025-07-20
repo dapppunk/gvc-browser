@@ -17,8 +17,12 @@ export default {
     // Parse the URL
     const url = new URL(request.url);
     
-    // Construct Magic Eden API URL
-    const meUrl = 'https://api-mainnet.magiceden.dev' + url.pathname + url.search;
+    // Construct Magic Eden API URL - prepend /v2 if not present
+    let pathname = url.pathname;
+    if (!pathname.startsWith('/v2')) {
+      pathname = '/v2' + pathname;
+    }
+    const meUrl = 'https://api-mainnet.magiceden.dev' + pathname + url.search;
     
     // Prepare headers for Magic Eden
     const meHeaders = new Headers();

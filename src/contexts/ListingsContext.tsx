@@ -217,8 +217,11 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
 
     try {
-      // Magic Eden API v3 for Ethereum collections
-      const url = `${MAGICEDEN_API_BASE}/tokens/ethereum/${COLLECTION_CONTRACT}?showAll=true&includeAttributes=false&limit=200&includeQuantity=true&includeDynamicPricing=true`;
+      // Magic Eden API v2 for Ethereum collections
+      const collectionSymbol = 'good-vibes-club'; // Magic Eden uses collection symbols
+      const url = `${MAGICEDEN_API_BASE}/collections/${collectionSymbol}/listings`;
+      
+      console.log('Fetching Magic Eden listings from:', url);
 
       const response = await fetch(url, options);
       
@@ -226,18 +229,16 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const data = await response.json();
         console.log('Magic Eden API response:', data);
         
-        // Magic Eden v3 API returns tokens array
-        if (data.tokens) {
-          data.tokens.forEach((token: any) => {
-            // Only process tokens that are listed for sale
-            if (token.listingQuantity > 0 && token.floorPrice) {
-              const tokenId = String(token.tokenId);
+        // Process the response based on the actual structure
+        if (Array.isArray(data)) {
+          // If data is directly an array of listings
+          data.forEach((listing: any) => {
+            // Magic Eden v2 listing structure
+            if (listing.price && listing.tokenAddress === COLLECTION_CONTRACT) {
+              const tokenId = String(listing.tokenId);
+              const priceValue = parseFloat(listing.price);
               
-              // Magic Eden returns price in ETH already (not wei)
-              const priceValue = parseFloat(token.floorPrice);
-              
-              // Validate price is a valid number
-              if (!isNaN(priceValue) && priceValue >= 0) {
+              if (!isNaN(priceValue) && priceValue > 0) {
                 const url = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
                 
                 magicEdenListings[tokenId] = {
@@ -246,16 +247,24 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                   url,
                   marketplace: 'magiceden'
                 };
-              } else {
-                console.warn(`Invalid Magic Eden price for token ${tokenId}:`, token.floorPrice);
               }
             }
           });
+          
+          if (data.length === 0) {
+            console.log('No Magic Eden listings found for this collection');
+          }
         }
       } else {
         console.error('Magic Eden API error:', response.status, response.statusText);
         const errorText = await response.text();
         console.error('Magic Eden error details:', errorText);
+        
+        // If the token endpoint doesn't work, try the marketplace endpoint
+        if (response.status === 400 || response.status === 404) {
+          console.log('Trying alternative Magic Eden endpoint...');
+          // You could add fallback logic here
+        }
       }
     } catch (error) {
       console.error('Error fetching Magic Eden listings:', error);
