@@ -1,0 +1,9 @@
+name = "gvc-magiceden-proxy"
+main = "cloudflare-worker-magiceden.js"
+compatibility_date = "2023-05-18"
+
+[env.production]
+vars = { }
+
+# Add your Magic Eden API key as a secret:
+# wrangler secret put MAGICEDEN_API_KEY

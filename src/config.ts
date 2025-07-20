@@ -8,7 +8,10 @@ export const CONFIG = {
   OPENSEA_API_KEY: import.meta.env.VITE_OPENSEA_API_KEY || '',
   
   // Magic Eden API Configuration
-  MAGICEDEN_API_BASE: import.meta.env.DEV ? '/api/magiceden' : 'https://api-mainnet.magiceden.dev/v2',
+  MAGICEDEN_API_BASE: import.meta.env.VITE_MAGICEDEN_PROXY_URL || 
+    (import.meta.env.DEV 
+      ? '/api/magiceden' // Local dev proxy
+      : 'https://api-mainnet.magiceden.dev/v3'), // Direct API for production
   MAGICEDEN_API_KEY: import.meta.env.VITE_MAGICEDEN_API_KEY || '',
   
   // Collection Information

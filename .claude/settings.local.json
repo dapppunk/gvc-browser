@@ -31,7 +31,8 @@
       "Bash(mv:*)",
       "Bash(chmod:*)",
       "Bash(echo \"Run this command to login to Cloudflare:\n\nwrangler login\n\nThis will open your browser to authenticate. After logging in, come back here.\")",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(wrangler deploy:*)"
     ],
     "deny": []
   }

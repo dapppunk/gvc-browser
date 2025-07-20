@@ -192,56 +192,70 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const magicEdenListings: Record<string, Listing> = {};
     
     const apiKey = CONFIG.MAGICEDEN_API_KEY;
-    if (!apiKey) {
-      console.warn('Magic Eden API key not configured. Magic Eden listings will not be available.');
-      return magicEdenListings;
+    
+    // Use API key when using proxy (dev or Cloudflare Worker)
+    const isUsingProxy = MAGICEDEN_API_BASE.includes('/api/magiceden') || MAGICEDEN_API_BASE.includes('workers.dev');
+    const useApiKey = isUsingProxy && apiKey;
+    
+    const headers: any = {
+      'Accept': 'application/json',
+    };
+    
+    // Add API key when using proxy or direct API
+    if (useApiKey || (!isUsingProxy && apiKey)) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
     }
+    
+    const options = { headers };
+    
+    // Log API calls to help debug
+    console.log('Magic Eden API Configuration:', {
+      base: MAGICEDEN_API_BASE,
+      isUsingProxy,
+      hasApiKey: !!apiKey,
+      isDev: import.meta.env.DEV
+    });
 
     try {
-      // Magic Eden API for Ethereum collections
-      const url = `${MAGICEDEN_API_BASE}/eth/collections/${COLLECTION_CONTRACT}/listings?limit=100`;
-      const options = {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Accept': 'application/json',
-        },
-      };
+      // Magic Eden API v3 for Ethereum collections
+      const url = `${MAGICEDEN_API_BASE}/tokens/ethereum/${COLLECTION_CONTRACT}?showAll=true&includeAttributes=false&limit=200&includeQuantity=true&includeDynamicPricing=true`;
 
       const response = await fetch(url, options);
       
       if (response.ok) {
         const data = await response.json();
-        if (data.listings) {
-          data.listings.forEach((listing: any) => {
-            const tokenId = String(listing.tokenId);
-            if (!magicEdenListings[tokenId]) {
-              // Add safety check for price data
-              if (!listing.price && listing.price !== 0) {
-                console.warn(`Missing price data for token ${tokenId} in Magic Eden:`, listing);
-                return; // Skip this iteration
-              }
+        console.log('Magic Eden API response:', data);
+        
+        // Magic Eden v3 API returns tokens array
+        if (data.tokens) {
+          data.tokens.forEach((token: any) => {
+            // Only process tokens that are listed for sale
+            if (token.listingQuantity > 0 && token.floorPrice) {
+              const tokenId = String(token.tokenId);
               
-              // Convert price from wei to ETH
-              const priceInWei = listing.price;
-              const priceValue = parseFloat(priceInWei);
+              // Magic Eden returns price in ETH already (not wei)
+              const priceValue = parseFloat(token.floorPrice);
               
               // Validate price is a valid number
               if (!isNaN(priceValue) && priceValue >= 0) {
-                const priceInEth = priceValue / Math.pow(10, 18);
-                const url = `https://magiceden.io/collections/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+                const url = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
                 
                 magicEdenListings[tokenId] = {
-                  price: priceInEth,
+                  price: priceValue,
                   currency: 'ETH',
                   url,
                   marketplace: 'magiceden'
                 };
               } else {
-                console.warn(`Invalid Magic Eden price for token ${tokenId}:`, priceInWei, 'parsed value:', priceValue, 'type:', typeof priceValue);
+                console.warn(`Invalid Magic Eden price for token ${tokenId}:`, token.floorPrice);
               }
             }
           });
         }
+      } else {
+        console.error('Magic Eden API error:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Magic Eden error details:', errorText);
       }
     } catch (error) {
       console.error('Error fetching Magic Eden listings:', error);
