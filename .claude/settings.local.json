@@ -30,7 +30,8 @@
       "Bash(git log:*)",
       "Bash(mv:*)",
       "Bash(chmod:*)",
-      "Bash(echo \"Run this command to login to Cloudflare:\n\nwrangler login\n\nThis will open your browser to authenticate. After logging in, come back here.\")"
+      "Bash(echo \"Run this command to login to Cloudflare:\n\nwrangler login\n\nThis will open your browser to authenticate. After logging in, come back here.\")",
+      "Bash(echo:*)"
     ],
     "deny": []
   }
