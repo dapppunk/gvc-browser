@@ -191,6 +191,25 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchMagicEdenListings = async (): Promise<Record<string, Listing>> => {
     const magicEdenListings: Record<string, Listing> = {};
     
+    // IMPORTANT: Magic Eden on Ethereum operates differently than on Solana
+    // On Ethereum, Magic Eden primarily aggregates listings from other marketplaces
+    // (OpenSea, Blur, X2Y2, etc.) rather than having its own order book.
+    // 
+    // Since we already fetch OpenSea listings directly, enabling Magic Eden
+    // would duplicate those listings. Their API returns all aggregated listings
+    // with source information (source.domain) but no filtering for Magic Eden-only
+    // listings is available because they don't exist separately.
+    //
+    // If you want to show aggregated listings from multiple marketplaces,
+    // uncomment the implementation below, but be aware that:
+    // 1. OpenSea listings will appear twice (once from OpenSea, once from Magic Eden)
+    // 2. You'll also get Blur, X2Y2, and other marketplace listings
+    // 3. The "marketplace" filter in the UI would need to be updated
+    
+    console.log('Magic Eden integration disabled - operates as aggregator on Ethereum');
+    return magicEdenListings;
+    
+    /* Original implementation - kept for reference
     const apiKey = CONFIG.MAGICEDEN_API_KEY;
     
     // Use API key when using proxy (dev or Cloudflare Worker)
@@ -218,6 +237,7 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       hasApiKey: !!apiKey,
       isDev: import.meta.env.DEV
     });
+    */
 
     try {
       // Magic Eden v3 RTP API for Ethereum NFT listings
