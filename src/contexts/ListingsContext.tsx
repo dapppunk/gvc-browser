@@ -193,6 +193,12 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     const apiKey = CONFIG.MAGICEDEN_API_KEY;
     
+    // Skip Magic Eden if no API key is configured
+    if (!apiKey) {
+      console.log('Magic Eden API key not configured, skipping Magic Eden listings');
+      return magicEdenListings;
+    }
+    
     // Use API key when using proxy (dev or Cloudflare Worker)
     const isUsingProxy = MAGICEDEN_API_BASE.includes('/api/magiceden') || MAGICEDEN_API_BASE.includes('workers.dev');
     const useApiKey = isUsingProxy && apiKey;
@@ -206,7 +212,11 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       headers['Authorization'] = `Bearer ${apiKey}`;
     }
     
-    const options = { headers };
+    const options = { 
+      headers,
+      mode: 'cors' as RequestMode,
+      credentials: 'omit' as RequestCredentials
+    };
     
     // Log API calls to help debug
     console.log('Magic Eden API Configuration:', {
@@ -239,7 +249,16 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       for (const url of endpoints) {
         console.log('Trying Magic Eden endpoint:', url);
         try {
-          const response = await fetch(url, options);
+          // Add timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
           
           if (response.ok) {
             data = await response.json();
@@ -252,8 +271,12 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               console.error('Magic Eden API key may be invalid');
             }
           }
-        } catch (err) {
-          console.log('Magic Eden endpoint error:', url, err);
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            console.log('Magic Eden endpoint timeout:', url);
+          } else {
+            console.log('Magic Eden endpoint error:', url, err.message);
+          }
         }
       }
       
