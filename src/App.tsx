@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { WagmiProvider } from 'wagmi';
+import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { config } from './wagmi';
 import { ListingsProvider, useListings } from './contexts/ListingsContext';
 import { FiltersProvider, useFilters, SearchSuggestion } from './contexts/FiltersContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme as useAppTheme } from './contexts/ThemeContext';
 import { AnalyticsProvider, useAnalytics } from './contexts/AnalyticsContext';
 import NFTGrid from './components/NFTGrid';
 import FilterSidebar from './components/FilterSidebar';
 import ThemeToggle from './components/Navbar/ThemeToggle';
 import BugReportButton from './components/BugReportButton';
+import CustomConnectButton from './components/CustomConnectButton';
 import StatsPanel from './components/StatsPanel';
 import UAENotification from './components/UAENotification';
 import AppBar from '@mui/material/AppBar';
@@ -29,7 +34,11 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import Drawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import '@rainbow-me/rainbowkit/styles.css';
+import './rainbowkit-minimal.css';
 import './App.css';
+
+const queryClient = new QueryClient();
 
 interface HeaderProps {
   isFiltersOpen: boolean;
@@ -520,6 +529,8 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
             gap: isMobile ? 0.5 : 1,
             flexDirection: isSmallMobile ? 'column' : 'row'
           }}>
+            {/* Custom styled RainbowKit button */}
+            <CustomConnectButton isMobile={isMobile} />
             {!isSmallMobile && (
               <Chip 
                 label={totalNfts === 0 ? "Loading..." : `${totalNfts} Total`}
@@ -549,6 +560,7 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
     </AppBar>
   );
 };
+
 
 const AppContent: React.FC = () => {
   const theme = useTheme();
@@ -598,11 +610,7 @@ const AppContent: React.FC = () => {
                 >
                   <FilterSidebar onClose={() => setIsFiltersOpen(false)} />
                 </Drawer>
-                <main className="content-area" style={{ 
-                  height: 'calc(100vh - 56px)',
-                  overflowY: 'auto',
-                  WebkitOverflowScrolling: 'touch'
-                }}>
+                <main className="content-area">
                   <NFTGrid />
                 </main>
               </>
@@ -628,11 +636,41 @@ const AppContent: React.FC = () => {
   );
 };
 
+const RainbowKitWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { mode } = useAppTheme();
+  
+  const customDarkTheme = darkTheme({
+    accentColor: '#f74d71',
+    accentColorForeground: 'white',
+    borderRadius: 'medium',
+    fontStack: 'system',
+  });
+
+  const customLightTheme = lightTheme({
+    accentColor: '#f74d71',
+    accentColorForeground: 'white',
+    borderRadius: 'medium',
+    fontStack: 'system',
+  });
+
+  return (
+    <RainbowKitProvider theme={mode === 'dark' ? customDarkTheme : customLightTheme}>
+      {children}
+    </RainbowKitProvider>
+  );
+};
+
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <RainbowKitWrapper>
+            <AppContent />
+          </RainbowKitWrapper>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 };
 

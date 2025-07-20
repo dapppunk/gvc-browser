@@ -11,7 +11,17 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git remote:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(sudo chown:*)",
+      "Bash(npm config set:*)",
+      "Bash(npm --version)",
+      "Bash(node:*)",
+      "Bash(npx:*)",
+      "Bash(NPM_CONFIG_CACHE=/tmp/.npm-cache npm install)",
+      "Bash(git fetch:*)"
     ],
     "deny": []
   }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useFilters } from '../contexts/FiltersContext';
-import { useListings } from '../contexts/ListingsContext';
+import { useListings, type Listing } from '../contexts/ListingsContext';
 import NFTCard from './NFTCard';
 import FilterTags from './FilterTags';
 import Dialog from '@mui/material/Dialog';
@@ -233,7 +233,7 @@ const NFTGrid: React.FC = () => {
     // Add listing information to NFTs BEFORE filtering
     const nftsWithListings = nfts.map(nft => ({
       ...nft,
-      listing: listings[nft.id]
+      listing: listings[nft.id]?.bestListing // Use the best listing from all marketplaces
     }));
     
     // Use FiltersContext's applyFilters method
@@ -253,7 +253,7 @@ const NFTGrid: React.FC = () => {
       setFilteredNfts(prevFiltered => 
         prevFiltered.map(nft => ({
           ...nft,
-          listing: listings[nft.id]
+          listing: listings[nft.id]?.bestListing // Use the best listing from all marketplaces
         }))
       );
     }
@@ -262,7 +262,7 @@ const NFTGrid: React.FC = () => {
   // Create a computed version of NFTs with current listings for rendering
   const nftsWithCurrentListings = filteredNfts.map(nft => ({
     ...nft,
-    listing: listings[nft.id]
+    listing: listings[nft.id]?.bestListing // Use the best listing from all marketplaces
   }));
 
   // Simplified scroll handler focused on .content-area
@@ -412,7 +412,7 @@ const NFTGrid: React.FC = () => {
     setModalImageLoading(false);
   };
 
-  const selectedListing = selectedNFT ? listings[selectedNFT.id] as Listing | undefined : undefined;
+  const selectedListing = selectedNFT ? listings[selectedNFT.id]?.bestListing : undefined;
 
   return (
     <>
@@ -689,7 +689,7 @@ const NFTGrid: React.FC = () => {
                   startIcon={<OpenInNewIcon />}
                   sx={{ color: '#f74d71', textTransform: 'none', fontWeight: 600, mb: 3 }}
                 >
-                  View on OpenSea
+                  View on {selectedListing.marketplace === 'magiceden' ? 'Magic Eden' : 'OpenSea'}
                 </Button>
               )}
               {/* Key traits vertical stack */}

@@ -1,0 +1,114 @@
+/* Minimal RainbowKit customization - ONLY button styling */
+
+/* Remove wrapper styling around button - target only direct button wrapper */
+[data-rk]:not([role="dialog"]):not([role="presentation"]) {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Specifically target account button wrapper */
+[data-rk] > div:has(button[data-testid="rk-account-button"]) {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove any black backgrounds from connected state */
+[data-rk] [data-testid="rk-account-button"],
+[data-rk] button[data-testid="rk-account-button"] {
+  background: linear-gradient(45deg, #ffa300, #f74d71) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+[data-rk] [data-testid="rk-account-button"]:hover,
+[data-rk] button[data-testid="rk-account-button"]:hover {
+  background: linear-gradient(45deg, #ff8c00, #e63946) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(247, 77, 113, 0.3) !important;
+}
+
+/* Remove black background from text containers inside the button */
+[data-rk] [data-testid="rk-account-button"] > *,
+[data-rk] [data-testid="rk-account-button"] div,
+[data-rk] [data-testid="rk-account-button"] span {
+  background: none !important;
+  background-color: transparent !important;
+  color: white !important;
+}
+
+/* Target any black backgrounds specifically */
+[data-rk] [style*="background: black"],
+[data-rk] [style*="background-color: black"],
+[data-rk] [style*="background: #000"],
+[data-rk] [style*="background-color: #000"],
+[data-rk] [style*="background: rgb(0, 0, 0)"],
+[data-rk] [style*="background-color: rgb(0, 0, 0)"] {
+  background: none !important;
+  background-color: transparent !important;
+}
+
+/* Style the modal backdrop properly */
+[data-rk] > div[style*="position: fixed"][style*="inset: 0"] {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Ensure modals are properly themed */
+[data-rk] [role="dialog"] {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+}
+
+/* Force ALL text to be visible - AGGRESSIVE */
+[data-rk] [role="dialog"],
+[data-rk] [role="dialog"] *,
+[data-rk] [role="dialog"] h1,
+[data-rk] [role="dialog"] h2,
+[data-rk] [role="dialog"] h3,
+[data-rk] [role="dialog"] p,
+[data-rk] [role="dialog"] span,
+[data-rk] [role="dialog"] div,
+[data-rk] [role="dialog"] button,
+[data-rk] [role="dialog"] a {
+  color: var(--text-primary) !important;
+}
+
+/* Override RainbowKit internal classes */
+[data-rk] [class*="iekbcc"],
+[data-rk] [class*="ju367v"] {
+  color: var(--text-primary) !important;
+}
+
+/* Force any white text to be visible */
+[data-rk] [style*="color: white"],
+[data-rk] [style*="color: #fff"],
+[data-rk] [style*="color: #ffffff"],
+[data-rk] [style*="color: rgb(255, 255, 255)"] {
+  color: var(--text-primary) !important;
+}
+
+/* Modal buttons */
+[data-rk] [role="dialog"] button {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+}
+
+[data-rk] [role="dialog"] button:hover {
+  background: rgba(247, 77, 113, 0.1) !important;
+  border-color: #f74d71 !important;
+}

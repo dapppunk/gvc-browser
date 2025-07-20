@@ -19,11 +19,12 @@ This is a React + TypeScript NFT browser application for the Good Vibes Club col
   - `FiltersContext` - Filter states and search functionality
   - `ListingsContext` - NFT listing data from OpenSea
   - `ThemeContext` - Theme switching (dark/light mode)
+- **Wallet Integration**: RainbowKit + wagmi for Web3 wallet connections with auto-reconnection
 
 ### Component Structure
 - **NFTGrid**: Main display component with infinite scroll and virtualization
 - **FilterSidebar**: Complex filtering UI with trait-based filters
-- **AppHeader**: Search, sorting, and statistics display
+- **AppHeader**: Search, sorting, statistics display, and wallet connection button
 - **Particles**: WebGL background animation using OGL library
 
 ### Performance Optimizations
@@ -52,5 +53,15 @@ Large CSV files are processed in Web Workers to maintain UI responsiveness. The 
 ### IPFS Integration
 Multiple IPFS gateways configured for image loading resilience (`src/config.ts`).
 
+### Wallet Integration
+Custom wallet connection system built with wagmi providing:
+- Auto-reconnection for previously connected wallets
+- Support for multiple wallet providers (MetaMask, WalletConnect, etc.)
+- Ethereum mainnet support
+- Clean, custom-designed modals matching the site's design system
+- Responsive design for mobile and desktop
+- Copy address and disconnect functionality
+
 ## Environment Variables
 - `VITE_OPENSEA_API_KEY` - OpenSea API key for listing data
+- `VITE_WALLETCONNECT_PROJECT_ID` - WalletConnect project ID from https://cloud.walletconnect.com

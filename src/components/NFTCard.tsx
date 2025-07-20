@@ -20,14 +20,9 @@ import BadgesList from './BadgesList';
 import { loadBadgeData, getNFTBadges, BadgeData } from '../utils/badges';
 import { calculateBPR, formatBPR, getBPRColor, getBPRRating } from '../utils/bpr';
 import { loadGridImage, type ImageLoadResult } from '../utils/imageUtils';
+import type { Listing, MarketplaceType } from '../contexts/ListingsContext';
 
-interface Listing {
-  price: number;
-  currency: string;
-  url: string;
-  hasActivity: boolean;
-  listing: any;
-}
+// Using Listing interface from ListingsContext
 
 interface NFT {
   id: string;
@@ -65,6 +60,30 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const ethPrice = useEthPrice();
   const { mode } = useTheme();
+
+  // Helper function to get marketplace logo and name
+  const getMarketplaceInfo = (marketplace: MarketplaceType) => {
+    switch (marketplace) {
+      case 'opensea':
+        return {
+          logo: `${import.meta.env.BASE_URL}images/opensea-logo.svg`,
+          name: 'OpenSea',
+          color: '#2081e2'
+        };
+      case 'magiceden':
+        return {
+          logo: `${import.meta.env.BASE_URL}images/magiceden-logo.svg`,
+          name: 'Magic Eden',
+          color: '#e42575'
+        };
+      default:
+        return {
+          logo: `${import.meta.env.BASE_URL}images/opensea-logo.svg`,
+          name: 'OpenSea',
+          color: '#2081e2'
+        };
+    }
+  };
 
   useEffect(() => {
     loadBadgeData().then(setBadgeData);
@@ -476,7 +495,16 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
                 onClick={e => e.stopPropagation()}
                 size="small"
               >
-                <img src={`${import.meta.env.BASE_URL}images/opensea-logo.svg`} alt="OpenSea" style={{ width: 20, height: 20, display: 'block' }} />
+                {(() => {
+                  const marketplaceInfo = getMarketplaceInfo(listing.marketplace);
+                  return (
+                    <img 
+                      src={marketplaceInfo.logo} 
+                      alt={marketplaceInfo.name} 
+                      style={{ width: 20, height: 20, display: 'block' }} 
+                    />
+                  );
+                })()}
               </IconButton>
             )}
           </Box>

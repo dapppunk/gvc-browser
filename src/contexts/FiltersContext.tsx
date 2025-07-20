@@ -382,8 +382,8 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
     switch (filters.sort) {
       case 'price_asc':
         return sortedNfts.sort((a, b) => {
-          const aListing = listings[a.id];
-          const bListing = listings[b.id];
+          const aListing = listings[a.id]?.bestListing;
+          const bListing = listings[b.id]?.bestListing;
           if (aListing && bListing) {
             return aListing.price - bListing.price;
           } else if (aListing) {
@@ -397,8 +397,8 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
       case 'price_desc':
         return sortedNfts.sort((a, b) => {
-          const aListing = listings[a.id];
-          const bListing = listings[b.id];
+          const aListing = listings[a.id]?.bestListing;
+          const bListing = listings[b.id]?.bestListing;
           if (aListing && bListing) {
             return bListing.price - aListing.price;
           } else if (aListing) {
