@@ -187,29 +187,10 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return openSeaListings;
   };
 
-  // Fetch Magic Eden listings
+  // Fetch Magic Eden listings (including Blur and other non-OpenSea marketplaces)
   const fetchMagicEdenListings = async (): Promise<Record<string, Listing>> => {
     const magicEdenListings: Record<string, Listing> = {};
     
-    // IMPORTANT: Magic Eden on Ethereum operates differently than on Solana
-    // On Ethereum, Magic Eden primarily aggregates listings from other marketplaces
-    // (OpenSea, Blur, X2Y2, etc.) rather than having its own order book.
-    // 
-    // Since we already fetch OpenSea listings directly, enabling Magic Eden
-    // would duplicate those listings. Their API returns all aggregated listings
-    // with source information (source.domain) but no filtering for Magic Eden-only
-    // listings is available because they don't exist separately.
-    //
-    // If you want to show aggregated listings from multiple marketplaces,
-    // uncomment the implementation below, but be aware that:
-    // 1. OpenSea listings will appear twice (once from OpenSea, once from Magic Eden)
-    // 2. You'll also get Blur, X2Y2, and other marketplace listings
-    // 3. The "marketplace" filter in the UI would need to be updated
-    
-    console.log('Magic Eden integration disabled - operates as aggregator on Ethereum');
-    return magicEdenListings;
-    
-    /* Original implementation - kept for reference
     const apiKey = CONFIG.MAGICEDEN_API_KEY;
     
     // Use API key when using proxy (dev or Cloudflare Worker)
@@ -230,30 +211,27 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       credentials: 'omit' as RequestCredentials
     };
     
-    // Log API calls to help debug
     console.log('Magic Eden API Configuration:', {
       base: MAGICEDEN_API_BASE,
       isUsingProxy,
       hasApiKey: !!apiKey,
       isDev: import.meta.env.DEV
     });
-    */
 
     try {
-      // Magic Eden v3 RTP API for Ethereum NFT listings
-      // Using the correct endpoint structure: /v3/rtp/ethereum/orders/asks/v5
-      // Filter for only Magic Eden source to avoid duplicating OpenSea listings
+      // Magic Eden v3 RTP API - fetch all marketplace listings
+      // We'll filter out OpenSea since we already get those directly
       let url: string;
       
       if (isUsingProxy && import.meta.env.DEV) {
         // In development, use the local proxy
-        url = `/api/magiceden/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&source=magiceden.io&limit=200`;
+        url = `/api/magiceden/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&limit=200`;
       } else if (isUsingProxy) {
         // In production with Cloudflare proxy
-        url = `${MAGICEDEN_API_BASE}/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&source=magiceden.io&limit=200`;
+        url = `${MAGICEDEN_API_BASE}/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&limit=200`;
       } else {
         // Direct API call
-        url = `https://api-mainnet.magiceden.dev/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&source=magiceden.io&limit=200`;
+        url = `https://api-mainnet.magiceden.dev/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&limit=200`;
       }
       
       console.log('Fetching Magic Eden listings from:', url);
@@ -269,8 +247,9 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         orders.forEach((order: any) => {
           try {
-            // Only process orders from Magic Eden source
-            if (order.source?.domain !== 'magiceden.io' && order.source?.name !== 'Magic Eden') {
+            // Skip OpenSea listings since we get those directly
+            // Include Magic Eden, Blur, and other marketplaces
+            if (order.source?.domain === 'opensea.io') {
               return;
             }
             
@@ -304,17 +283,35 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               priceInEth = priceInEth / 1e9;
             }
             
-            // Create listing entry
-            const magicEdenUrl = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+            // Create listing entry with proper marketplace URL
+            let listingUrl = order.source?.url || '';
+            let marketplace: MarketplaceType = 'magiceden';
+            
+            // Set proper marketplace type based on source
+            if (order.source?.domain === 'blur.io') {
+              marketplace = 'magiceden'; // We'll still mark as magiceden since it comes through their API
+              if (!listingUrl) {
+                listingUrl = `https://blur.io/asset/${COLLECTION_CONTRACT}/${tokenId}`;
+              }
+            } else if (order.source?.domain === 'magiceden.us' || order.source?.domain === 'magiceden.io') {
+              if (!listingUrl) {
+                listingUrl = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+              }
+            } else {
+              // Other marketplaces - use Magic Eden URL as fallback
+              if (!listingUrl) {
+                listingUrl = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+              }
+            }
             
             magicEdenListings[tokenId] = {
               price: priceInEth,
               currency: currency,
-              url: magicEdenUrl,
-              marketplace: 'magiceden'
+              url: listingUrl,
+              marketplace: marketplace
             };
             
-            console.log(`Added Magic Eden listing: Token ${tokenId}, Price: ${priceInEth} ${currency}`);
+            console.log(`Added listing from ${order.source?.name || 'Unknown'}: Token ${tokenId}, Price: ${priceInEth} ${currency}`);
           } catch (err) {
             console.warn('Error parsing Magic Eden order:', order, err);
           }
@@ -332,61 +329,6 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.error('Magic Eden API error:', response.status, response.statusText);
         if (response.status === 429) {
           console.error('Rate limited by Magic Eden API');
-        } else if (response.status === 400) {
-          console.error('Bad request - check API parameters');
-          // Try without source filter as fallback
-          const fallbackUrl = url.replace('&source=magiceden.io', '');
-          console.log('Trying without source filter:', fallbackUrl);
-          
-          try {
-            const fallbackResponse = await fetch(fallbackUrl, options);
-            if (fallbackResponse.ok) {
-              const data = await fallbackResponse.json();
-              console.log('Fallback successful, processing all marketplace data');
-              
-              // Process but filter for Magic Eden only
-              const orders = data.orders || [];
-              orders.forEach((order: any) => {
-                if (order.source?.domain === 'magiceden.io' || order.source?.name === 'Magic Eden') {
-                  // Process Magic Eden order (same logic as above)
-                  try {
-                    const tokenInfo = order.criteria?.data?.token || {};
-                    const tokenId = tokenInfo.tokenId || order.tokenSetId?.split(':').pop();
-                    
-                    if (tokenId) {
-                      const price = order.price || {};
-                      const priceAmount = price.amount?.raw || price.amount || order.rawPrice;
-                      const currency = price.currency?.symbol || 'ETH';
-                      
-                      if (priceAmount) {
-                        let priceInEth = parseFloat(priceAmount);
-                        if (priceInEth > 1e15) {
-                          priceInEth = priceInEth / 1e18;
-                        } else if (priceInEth > 1000) {
-                          priceInEth = priceInEth / 1e9;
-                        }
-                        
-                        const magicEdenUrl = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
-                        
-                        magicEdenListings[tokenId] = {
-                          price: priceInEth,
-                          currency: currency,
-                          url: magicEdenUrl,
-                          marketplace: 'magiceden'
-                        };
-                      }
-                    }
-                  } catch (err) {
-                    console.warn('Error parsing Magic Eden order:', order, err);
-                  }
-                }
-              });
-              
-              console.log(`Found ${Object.keys(magicEdenListings).length} Magic Eden listings from fallback`);
-            }
-          } catch (fallbackError) {
-            console.error('Fallback request also failed:', fallbackError);
-          }
         }
       }
     } catch (error) {
