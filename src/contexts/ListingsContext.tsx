@@ -59,15 +59,27 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     const options = { headers };
     
-    // Log if we're in production to help debug
-    if (!import.meta.env.DEV) {
-      console.log('Production API call to:', OPENSEA_API_BASE, isUsingProxy ? '(via proxy)' : '(direct, no API key)');
-    }
+    // Log API calls to help debug
+    console.log('OpenSea API Configuration:', {
+      base: OPENSEA_API_BASE,
+      isUsingProxy,
+      hasApiKey: !!apiKey,
+      isDev: import.meta.env.DEV,
+      isVercel: !!import.meta.env.VITE_VERCEL
+    });
 
     try {
       // Get best listings first
       const bestUrl = `${OPENSEA_API_BASE}/listings/collection/${OPENSEA_COLLECTION_SLUG}/best?limit=100`;
+      console.log('Fetching best listings from:', bestUrl);
       const bestResponse = await fetch(bestUrl, options);
+      
+      console.log('Best listings response:', bestResponse.status, bestResponse.statusText);
+      
+      if (!bestResponse.ok) {
+        const errorText = await bestResponse.text();
+        console.error('Failed to fetch best listings:', errorText);
+      }
       
       if (bestResponse.ok) {
         const bestData = await bestResponse.json();
@@ -159,6 +171,11 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           next = data.next;
           pageCount++;
         } else {
+          console.error('Failed to fetch all listings:', response.status, response.statusText);
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error details:', errorText);
+          }
           break;
         }
       } while (next && pageCount < 30);

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Debug - vibescollector.com</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #2a2a2a; padding: 15px; border-radius: 5px; overflow: auto; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>OpenSea API Debug Tool</h1>
+    
+    <div>
+        <button onclick="testProxy()">Test Proxy API (/api/opensea)</button>
+        <button onclick="testDirect()">Test Direct API</button>
+        <button onclick="testProxyWithKey()">Test Proxy with Client Key</button>
+    </div>
+
+    <h2>Results:</h2>
+    <pre id="result">Click a button to test...</pre>
+
+    <script>
+        const resultEl = document.getElementById('result');
+        const API_KEY = '1277d5b42ffe45adbe69f9d84851057b';
+
+        async function log(message, isError = false) {
+            const timestamp = new Date().toISOString();
+            const className = isError ? 'error' : 'success';
+            resultEl.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+        }
+
+        async function testProxy() {
+            resultEl.innerHTML = 'Testing Proxy API...\n\n';
+            try {
+                log('Fetching via proxy: /api/opensea/listings/collection/good-vibes-club/best?limit=1');
+                
+                const response = await fetch('/api/opensea/listings/collection/good-vibes-club/best?limit=1', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                const data = await response.json();
+                log('Response data:');
+                resultEl.innerHTML += JSON.stringify(data, null, 2) + '\n';
+                
+                if (data.listings && data.listings.length > 0) {
+                    log('\n✅ SUCCESS: Proxy is working!');
+                } else if (data.error) {
+                    log('\n❌ ERROR: ' + data.error, true);
+                }
+            } catch (error) {
+                log('❌ FETCH ERROR: ' + error.message, true);
+            }
+        }
+
+        async function testDirect() {
+            resultEl.innerHTML = 'Testing Direct API...\n\n';
+            try {
+                log('Fetching directly: https://api.opensea.io/v2/listings/collection/good-vibes-club/best?limit=1');
+                
+                const response = await fetch('https://api.opensea.io/v2/listings/collection/good-vibes-club/best?limit=1', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                const data = await response.json();
+                log('Response data:');
+                resultEl.innerHTML += JSON.stringify(data, null, 2) + '\n';
+                
+                if (data.listings && data.listings.length > 0) {
+                    log('\n✅ SUCCESS: Direct API works (no CORS)!');
+                }
+            } catch (error) {
+                log('❌ CORS ERROR: ' + error.message, true);
+                log('This is expected - browsers block direct API calls with authentication', true);
+            }
+        }
+
+        async function testProxyWithKey() {
+            resultEl.innerHTML = 'Testing Proxy with Client API Key...\n\n';
+            try {
+                log('Fetching via proxy with X-API-KEY header');
+                
+                const response = await fetch('/api/opensea/listings/collection/good-vibes-club/best?limit=1', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-API-KEY': API_KEY
+                    }
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                const data = await response.json();
+                log('Response data:');
+                resultEl.innerHTML += JSON.stringify(data, null, 2) + '\n';
+                
+                if (data.listings && data.listings.length > 0) {
+                    log('\n✅ SUCCESS: Proxy with API key is working!');
+                } else if (data.error) {
+                    log('\n❌ ERROR: ' + data.error, true);
+                }
+            } catch (error) {
+                log('❌ FETCH ERROR: ' + error.message, true);
+            }
+        }
+
+        // Test on load
+        window.onload = () => {
+            log('Debug tool loaded. Environment: ' + (window.location.hostname === 'localhost' ? 'Development' : 'Production'));
+        };
+    </script>
+</body>
+</html>

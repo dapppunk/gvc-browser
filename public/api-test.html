@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenSea API Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        pre {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>OpenSea API Debug Tool</h1>
+    
+    <div class="test-section">
+        <h2>Environment Check</h2>
+        <pre id="env-info">Loading...</pre>
+    </div>
+
+    <div class="test-section">
+        <h2>API Tests</h2>
+        <button onclick="testDirectAPI()">Test Direct OpenSea API</button>
+        <button onclick="testProxyAPI()">Test Proxy API</button>
+        <button onclick="testProxyWithKey()">Test Proxy with API Key</button>
+        <pre id="test-results"></pre>
+    </div>
+
+    <script>
+        // Display environment info
+        document.getElementById('env-info').textContent = JSON.stringify({
+            hostname: window.location.hostname,
+            pathname: window.location.pathname,
+            isProduction: !window.location.hostname.includes('localhost'),
+            timestamp: new Date().toISOString()
+        }, null, 2);
+
+        function log(message, isError = false) {
+            const results = document.getElementById('test-results');
+            const timestamp = new Date().toISOString();
+            const className = isError ? 'error' : 'success';
+            results.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            console.log(message);
+        }
+
+        async function testDirectAPI() {
+            log('Testing direct OpenSea API...');
+            try {
+                const response = await fetch('https://api.opensea.io/v2/collections/good-vibes-club', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                log(`Direct API Response: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`Collection found: ${data.collection?.name || 'Unknown'}`);
+                } else {
+                    log(`Error response: ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log(`Direct API Error: ${error.message}`, true);
+            }
+        }
+
+        async function testProxyAPI() {
+            log('\nTesting proxy API without key...');
+            try {
+                const response = await fetch('/api/opensea/collections/good-vibes-club', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                log(`Proxy API Response: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`Collection found via proxy: ${data.collection?.name || 'Unknown'}`);
+                } else {
+                    log(`Error response: ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log(`Proxy API Error: ${error.message}`, true);
+            }
+        }
+
+        async function testProxyWithKey() {
+            log('\nTesting proxy API with key...');
+            const apiKey = prompt('Enter your OpenSea API key (or leave empty to skip):');
+            if (!apiKey) {
+                log('Skipped API key test');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/opensea/listings/collection/good-vibes-club/best?limit=10', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-API-KEY': apiKey
+                    }
+                });
+                log(`Proxy API with key Response: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`Listings found: ${data.listings?.length || 0} items`);
+                } else {
+                    log(`Error response: ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log(`Proxy API with key Error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>
