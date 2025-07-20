@@ -26,7 +26,8 @@
       "Bash(true)",
       "Bash(cat:*)",
       "Bash(cp:*)",
-      "WebFetch(domain:docs.opensea.io)"
+      "WebFetch(domain:docs.opensea.io)",
+      "Bash(git log:*)"
     ],
     "deny": []
   }

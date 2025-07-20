@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenSea CORS Test</title>
+</head>
+<body>
+    <h1>OpenSea API CORS Test</h1>
+    <button onclick="testWithKey()">Test WITH API Key</button>
+    <button onclick="testWithoutKey()">Test WITHOUT API Key</button>
+    <pre id="result"></pre>
+
+    <script>
+        const API_KEY = '1277d5b42ffe45adbe69f9d84851057b';
+        const resultEl = document.getElementById('result');
+
+        async function testWithKey() {
+            resultEl.textContent = 'Testing WITH API key...\n';
+            try {
+                const response = await fetch('https://api.opensea.io/v2/listings/collection/good-vibes-club/best?limit=1', {
+                    headers: {
+                        'X-API-KEY': API_KEY,
+                        'Accept': 'application/json'
+                    }
+                });
+                resultEl.textContent += `Status: ${response.status}\n`;
+                const data = await response.json();
+                resultEl.textContent += JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent += `ERROR: ${error.message}\n`;
+                resultEl.textContent += 'This means CORS is blocking the request.';
+            }
+        }
+
+        async function testWithoutKey() {
+            resultEl.textContent = 'Testing WITHOUT API key...\n';
+            try {
+                const response = await fetch('https://api.opensea.io/v2/listings/collection/good-vibes-club/best?limit=1', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                resultEl.textContent += `Status: ${response.status}\n`;
+                const data = await response.json();
+                resultEl.textContent += JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent += `ERROR: ${error.message}\n`;
+                resultEl.textContent += 'This means CORS is blocking the request.';
+            }
+        }
+    </script>
+</body>
+</html>

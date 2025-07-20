@@ -54,6 +54,11 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         'Accept': 'application/json',
       },
     };
+    
+    // Log if we're in production to help debug
+    if (!import.meta.env.DEV) {
+      console.log('Production API call to:', OPENSEA_API_BASE);
+    }
 
     try {
       // Get best listings first

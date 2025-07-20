@@ -1,6 +1,6 @@
 export const CONFIG = {
   // OpenSea API Configuration
-  OPENSEA_API_BASE: import.meta.env.VITE_OPENSEA_PROXY_URL || '/api/opensea', // Use custom proxy URL if provided
+  OPENSEA_API_BASE: import.meta.env.VITE_OPENSEA_PROXY_URL || (import.meta.env.DEV ? '/api/opensea' : 'https://api.opensea.io/v2'), // Use proxy in dev, direct in prod unless custom proxy provided
   OPENSEA_API_KEY: import.meta.env.VITE_OPENSEA_API_KEY || '',
   
   // Magic Eden API Configuration
