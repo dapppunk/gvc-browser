@@ -1,6 +1,6 @@
 export const CONFIG = {
   // OpenSea API Configuration
-  OPENSEA_API_BASE: import.meta.env.DEV ? '/api/opensea' : 'https://api.opensea.io/v2',
+  OPENSEA_API_BASE: '/api/opensea', // Always use proxy to avoid CORS
   OPENSEA_API_KEY: import.meta.env.VITE_OPENSEA_API_KEY || '',
   
   // Magic Eden API Configuration

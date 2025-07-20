@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/opensea-proxy.ts": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/opensea/:path*",
+      "destination": "/api/opensea-proxy?path=/$1"
+    }
+  ]
+}
