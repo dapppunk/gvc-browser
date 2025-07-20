@@ -141,6 +141,12 @@ export function formatBPR(bprScore: number, isListed: boolean): string {
     return 'N/A';
   }
   
+  // Validate bprScore is a valid number
+  if (isNaN(bprScore) || !isFinite(bprScore)) {
+    console.warn('Invalid BPR score:', bprScore);
+    return 'N/A';
+  }
+  
   if (bprScore >= 100) {
     return '99+';
   }

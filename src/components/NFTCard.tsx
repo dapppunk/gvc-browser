@@ -463,13 +463,13 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--text-primary, #fff)' }}>
-                  {listing.price.toFixed(3)}
+                  {!isNaN(listing.price) && isFinite(listing.price) ? listing.price.toFixed(3) : 'N/A'}
                 </Typography>
                 <Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
                   <span style={{ fontWeight: 700, fontSize: '1.1em', marginLeft: 2 }}>Ξ</span>
                 </Box>
               </Box>
-              {ethPrice && (
+              {ethPrice && !isNaN(listing.price) && isFinite(listing.price) && (
                 <Typography variant="caption" sx={{ color: 'var(--text-secondary, #aaa)', fontWeight: 500, fontSize: '0.85em', mt: 0.5 }}>
                   ${(listing.price * ethPrice).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('$','')}
                 </Typography>
@@ -542,7 +542,7 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
                   </Typography>
                   {listing && (
                     <Typography variant="body2" sx={{ ml: 1, mb: 0.5 }}>
-                      • Price: {listing.price.toFixed(3)} ETH
+                      • Price: {!isNaN(listing.price) && isFinite(listing.price) ? `${listing.price.toFixed(3)} ETH` : 'N/A'}
                     </Typography>
                   )}
                   <Typography variant="body2" sx={{ mt: 1, fontWeight: 600, color: bprColor }}>

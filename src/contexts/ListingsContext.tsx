@@ -67,15 +67,23 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const tokenId = String(listing.protocol_data.parameters.offer[0].identifierOrCriteria);
             if (!openSeaListings[tokenId]) {
               const priceData = listing.price.current;
-              const priceInEth = parseFloat(priceData.value) / Math.pow(10, priceData.decimals);
-              const url = `https://opensea.io/assets/${CHAIN}/${COLLECTION_CONTRACT}/${tokenId}`;
-              openSeaListings[tokenId] = {
-                price: priceInEth,
-                currency: priceData.currency,
-                url,
-                marketplace: 'opensea',
-                hasActivity: true
-              };
+              const priceValue = parseFloat(priceData.value);
+              const decimals = parseInt(priceData.decimals) || 18;
+              
+              // Validate price is a valid number
+              if (!isNaN(priceValue) && priceValue >= 0) {
+                const priceInEth = priceValue / Math.pow(10, decimals);
+                const url = `https://opensea.io/assets/${CHAIN}/${COLLECTION_CONTRACT}/${tokenId}`;
+                openSeaListings[tokenId] = {
+                  price: priceInEth,
+                  currency: priceData.currency || 'ETH',
+                  url,
+                  marketplace: 'opensea',
+                  hasActivity: true
+                };
+              } else {
+                console.warn(`Invalid price data for token ${tokenId}:`, priceData);
+              }
             }
           });
         }
@@ -96,14 +104,22 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const tokenId = String(listing.protocol_data.parameters.offer[0].identifierOrCriteria);
               if (!openSeaListings[tokenId]) {
                 const priceData = listing.price.current;
-                const priceInEth = parseFloat(priceData.value) / Math.pow(10, priceData.decimals);
-                const url = `https://opensea.io/assets/${CHAIN}/${COLLECTION_CONTRACT}/${tokenId}`;
-                openSeaListings[tokenId] = {
-                  price: priceInEth,
-                  currency: priceData.currency,
-                  url,
-                  marketplace: 'opensea'
-                };
+                const priceValue = parseFloat(priceData.value);
+                const decimals = parseInt(priceData.decimals) || 18;
+                
+                // Validate price is a valid number
+                if (!isNaN(priceValue) && priceValue >= 0) {
+                  const priceInEth = priceValue / Math.pow(10, decimals);
+                  const url = `https://opensea.io/assets/${CHAIN}/${COLLECTION_CONTRACT}/${tokenId}`;
+                  openSeaListings[tokenId] = {
+                    price: priceInEth,
+                    currency: priceData.currency || 'ETH',
+                    url,
+                    marketplace: 'opensea'
+                  };
+                } else {
+                  console.warn(`Invalid price data for token ${tokenId}:`, priceData);
+                }
               }
             });
           }
@@ -151,15 +167,22 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (!magicEdenListings[tokenId]) {
               // Convert price from wei to ETH
               const priceInWei = listing.price;
-              const priceInEth = parseFloat(priceInWei) / Math.pow(10, 18);
-              const url = `https://magiceden.io/collections/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+              const priceValue = parseFloat(priceInWei);
               
-              magicEdenListings[tokenId] = {
-                price: priceInEth,
-                currency: 'ETH',
-                url,
-                marketplace: 'magiceden'
-              };
+              // Validate price is a valid number
+              if (!isNaN(priceValue) && priceValue >= 0) {
+                const priceInEth = priceValue / Math.pow(10, 18);
+                const url = `https://magiceden.io/collections/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+                
+                magicEdenListings[tokenId] = {
+                  price: priceInEth,
+                  currency: 'ETH',
+                  url,
+                  marketplace: 'magiceden'
+                };
+              } else {
+                console.warn(`Invalid Magic Eden price for token ${tokenId}:`, priceInWei);
+              }
             }
           });
         }
