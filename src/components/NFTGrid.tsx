@@ -517,7 +517,7 @@ const NFTGrid: React.FC = () => {
           <NFTCard
             key={nft.id}
             nft={nft}
-            listing={listings[nft.id] as Listing | undefined}
+            listing={listings[nft.id]?.bestListing}
             onClick={() => handleCardClick(nft)}
             onImageLoad={handleImageLoad}
           />

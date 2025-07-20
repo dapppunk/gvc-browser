@@ -66,7 +66,19 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           bestData.listings.forEach((listing: any) => {
             const tokenId = String(listing.protocol_data.parameters.offer[0].identifierOrCriteria);
             if (!openSeaListings[tokenId]) {
+              // Add safety checks for price data
+              if (!listing.price || !listing.price.current) {
+                console.warn(`Missing price data for token ${tokenId}:`, listing);
+                return; // Skip this iteration
+              }
+              
               const priceData = listing.price.current;
+              // Check if priceData has the expected structure
+              if (!priceData.value) {
+                console.warn(`Invalid price data structure for token ${tokenId}:`, priceData);
+                return; // Skip this iteration
+              }
+              
               const priceValue = parseFloat(priceData.value);
               const decimals = parseInt(priceData.decimals) || 18;
               
@@ -82,7 +94,7 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                   hasActivity: true
                 };
               } else {
-                console.warn(`Invalid price data for token ${tokenId}:`, priceData);
+                console.warn(`Invalid price data for token ${tokenId}:`, priceData, 'parsed value:', priceValue, 'type:', typeof priceValue);
               }
             }
           });
@@ -103,7 +115,19 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             data.listings.forEach((listing: any) => {
               const tokenId = String(listing.protocol_data.parameters.offer[0].identifierOrCriteria);
               if (!openSeaListings[tokenId]) {
+                // Add safety checks for price data
+                if (!listing.price || !listing.price.current) {
+                  console.warn(`Missing price data for token ${tokenId} in all listings:`, listing);
+                  return; // Skip this iteration
+                }
+                
                 const priceData = listing.price.current;
+                // Check if priceData has the expected structure
+                if (!priceData.value) {
+                  console.warn(`Invalid price data structure for token ${tokenId} in all listings:`, priceData);
+                  return; // Skip this iteration
+                }
+                
                 const priceValue = parseFloat(priceData.value);
                 const decimals = parseInt(priceData.decimals) || 18;
                 
@@ -118,7 +142,7 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     marketplace: 'opensea'
                   };
                 } else {
-                  console.warn(`Invalid price data for token ${tokenId}:`, priceData);
+                  console.warn(`Invalid price data for token ${tokenId} in all listings:`, priceData, 'parsed value:', priceValue, 'type:', typeof priceValue);
                 }
               }
             });
@@ -165,6 +189,12 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           data.listings.forEach((listing: any) => {
             const tokenId = String(listing.tokenId);
             if (!magicEdenListings[tokenId]) {
+              // Add safety check for price data
+              if (!listing.price && listing.price !== 0) {
+                console.warn(`Missing price data for token ${tokenId} in Magic Eden:`, listing);
+                return; // Skip this iteration
+              }
+              
               // Convert price from wei to ETH
               const priceInWei = listing.price;
               const priceValue = parseFloat(priceInWei);
@@ -181,7 +211,7 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                   marketplace: 'magiceden'
                 };
               } else {
-                console.warn(`Invalid Magic Eden price for token ${tokenId}:`, priceInWei);
+                console.warn(`Invalid Magic Eden price for token ${tokenId}:`, priceInWei, 'parsed value:', priceValue, 'type:', typeof priceValue);
               }
             }
           });
@@ -199,6 +229,8 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setIsLoading(true);
       setError(null);
+      
+      console.log('Starting to load listings...');
       
       // Fetch from both marketplaces concurrently
       const [openSeaListings, magicEdenListings] = await Promise.allSettled([
