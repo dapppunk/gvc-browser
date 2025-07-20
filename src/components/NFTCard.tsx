@@ -74,7 +74,7 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
         return {
           logo: `${import.meta.env.BASE_URL}images/magiceden-logo.svg`,
           name: 'Magic Eden',
-          color: '#e42575'
+          color: '#ff0075' // Updated to match the gradient start color
         };
       default:
         return {
