@@ -38,6 +38,40 @@ export default defineConfig({
             console.log('Received Response from Magic Eden:', proxyRes.statusCode, req.url);
           });
         },
+      },
+      '/api/alchemy': {
+        target: 'https://eth-mainnet.g.alchemy.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/alchemy/, ''),
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('Alchemy proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to Alchemy:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from Alchemy:', proxyRes.statusCode, req.url);
+          });
+        },
+      },
+      '/api/reservoir': {
+        target: 'https://api.reservoir.tools',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/reservoir/, ''),
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('Reservoir proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to Reservoir:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from Reservoir:', proxyRes.statusCode, req.url);
+          });
+        },
       }
     }
   },

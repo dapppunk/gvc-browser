@@ -21,6 +21,7 @@ import { loadBadgeData, getNFTBadges, BadgeData } from '../utils/badges';
 import { calculateBPR, formatBPR, getBPRColor, getBPRRating } from '../utils/bpr';
 import { loadGridImage, type ImageLoadResult } from '../utils/imageUtils';
 import type { Listing, MarketplaceType } from '../contexts/ListingsContext';
+import { useWallet } from '../contexts/WalletContext';
 
 // Using Listing interface from ListingsContext
 
@@ -60,6 +61,7 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const ethPrice = useEthPrice();
   const { mode } = useTheme();
+  const { ownedBadges } = useWallet();
 
   // Helper function to get marketplace logo and name
   const getMarketplaceInfo = (marketplace: MarketplaceType) => {
@@ -112,8 +114,10 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
   }, []);
 
   // NFT data extraction
-  const nftBadges = getNFTBadges(nft, badgeData);
-  const bprData = calculateBPR(nftBadges, listing?.price || 0);
+  const allNftBadges = getNFTBadges(nft, badgeData);
+  // Filter badges to only show gainable ones (not already owned)
+  const nftBadges = allNftBadges.filter(badge => !ownedBadges.has(badge.key));
+  const bprData = calculateBPR(allNftBadges, listing?.price || 0);
   const bprColor = getBPRColor(bprData.score, !!listing);
   const bprRating = getBPRRating(bprData.score, !!listing);
 
@@ -429,24 +433,28 @@ const NFTCard: React.FC<Props> = ({ nft, listing, onClick, onImageLoad }) => {
         )}
       </Box>
       
-      {/* Badge Section */}
-      {nftBadges.length > 0 && (
-        <Box sx={{
-          px: 2,
-          py: 1,
-          borderTop: nftBadges.length > 0 ? '1px solid var(--border-color, #404040)' : 'none',
-          backgroundColor: 'var(--card-bg, #2a2a2a)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+      {/* Badge Section - Always render to maintain consistent layout */}
+      <Box sx={{
+        px: 2,
+        py: 1,
+        borderTop: '1px solid var(--border-color, #404040)',
+        backgroundColor: 'var(--card-bg, #2a2a2a)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 56, // Maintain consistent height even when empty
+      }}>
+        {nftBadges.length > 0 ? (
           <BadgesList 
             badges={nftBadges} 
             size="large" 
             maxVisible={5}
           />
-        </Box>
-      )}
+        ) : (
+          // Empty placeholder to maintain layout
+          <Box sx={{ height: 40 }} />
+        )}
+      </Box>
       
       <CardContent sx={{
         display: 'flex',

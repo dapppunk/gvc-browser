@@ -14,6 +14,12 @@ export const CONFIG = {
       : 'https://api-mainnet.magiceden.dev/v2'), // Direct API for production
   MAGICEDEN_API_KEY: import.meta.env.VITE_MAGICEDEN_API_KEY || '',
   
+  // Alchemy API Configuration
+  ALCHEMY_API_BASE: import.meta.env.VITE_ALCHEMY_PROXY_URL || 
+    (import.meta.env.DEV 
+      ? '/api/alchemy' // Local dev proxy
+      : 'https://gvc-alchemy-proxy.workers.dev/api/alchemy'), // Cloudflare Worker proxy
+  
   // Collection Information
   COLLECTION_CONTRACT: '0xb8ea78fcacef50d41375e44e6814ebba36bb33c4',
   COLLECTION_SLUG: 'good-vibes-club',

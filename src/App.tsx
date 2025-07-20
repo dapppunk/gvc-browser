@@ -7,11 +7,14 @@ import { ListingsProvider, useListings } from './contexts/ListingsContext';
 import { FiltersProvider, useFilters, SearchSuggestion } from './contexts/FiltersContext';
 import { ThemeProvider, useTheme as useAppTheme } from './contexts/ThemeContext';
 import { AnalyticsProvider, useAnalytics } from './contexts/AnalyticsContext';
+import { WalletProvider } from './contexts/WalletContext';
+import { loadBadgeData, BadgeData } from './utils/badges';
+import { NFT } from './types';
 import NFTGrid from './components/NFTGrid';
 import FilterSidebar from './components/FilterSidebar';
 import ThemeToggle from './components/Navbar/ThemeToggle';
 import BugReportButton from './components/BugReportButton';
-import CustomConnectButton from './components/CustomConnectButton';
+import FullyCustomConnectButton from './components/FullyCustomConnectButton';
 import StatsPanel from './components/StatsPanel';
 import UAENotification from './components/UAENotification';
 import AppBar from '@mui/material/AppBar';
@@ -34,6 +37,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import Drawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import { Mosaic } from 'react-loading-indicators';
 import '@rainbow-me/rainbowkit/styles.css';
 import './rainbowkit-minimal.css';
 import './App.css';
@@ -529,8 +533,8 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
             gap: isMobile ? 0.5 : 1,
             flexDirection: isSmallMobile ? 'column' : 'row'
           }}>
-            {/* Custom styled RainbowKit button */}
-            <CustomConnectButton isMobile={isMobile} />
+            {/* Fully custom wallet connect button */}
+            <FullyCustomConnectButton isMobile={isMobile} />
             {!isSmallMobile && (
               <Chip 
                 label={totalNfts === 0 ? "Loading..." : `${totalNfts} Total`}
@@ -566,6 +570,85 @@ const AppContent: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [isFiltersOpen, setIsFiltersOpen] = useState(true); // Always start open, mobile will override
+  const [nftData, setNftData] = useState<NFT[]>([]);
+  const [badgeData, setBadgeData] = useState<BadgeData>({});
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Load badge data
+  useEffect(() => {
+    loadBadgeData().then(setBadgeData);
+  }, []);
+
+  // Load NFT data
+  useEffect(() => {
+    const loadNFTs = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}data/gvc_data.csv`);
+        const csvText = await response.text();
+        const rows = csvText.split('\n').slice(1); // Skip header row
+        
+        const nfts = rows.map(row => {
+          const columns = row.split(',');
+          
+          // Map CSV columns to NFT type
+          return {
+            token_id: columns[0],
+            image_original_url: columns[20] || '',
+            name: `GVC #${columns[0]}`,
+            description: '',
+            'asset_contract.address': '0xb8ea78fcacef50d41375e44e6814ebba36bb33c4',
+            'asset_contract.created_date': '',
+            'asset_contract.name': 'Good Vibes Club',
+            'asset_contract.nft_version': '',
+            'asset_contract.opensea_version': '',
+            'asset_contract.owner': '',
+            'asset_contract.schema_name': 'ERC721',
+            'asset_contract.symbol': 'GVC',
+            'asset_contract.total_supply': '',
+            'asset_contract.description': '',
+            'asset_contract.external_link': '',
+            'asset_contract.image_url': '',
+            'asset_contract.default_to_fiat': false,
+            'asset_contract.dev_buyer_fee_basis_points': '',
+            'asset_contract.dev_seller_fee_basis_points': '',
+            'asset_contract.only_proxied_transfers': false,
+            'asset_contract.opensea_buyer_fee_basis_points': '',
+            'asset_contract.opensea_seller_fee_basis_points': '',
+            'asset_contract.buyer_fee_basis_points': '',
+            'asset_contract.seller_fee_basis_points': '',
+            'asset_contract.payout_address': '',
+            image_url: columns[20] || '',
+            image_preview_url: columns[20] || '',
+            image_thumbnail_url: columns[20] || '',
+            is_presale: false,
+            listing_date: null,
+            token_metadata: '',
+            traits: [],
+            id: columns[0],
+            background: columns[2] || '',
+            body: columns[4] || '',
+            face: columns[8] || '',
+            hair: columns[12] || '',
+            gender: columns[1] || '',
+            type: columns[16] || '',
+            badge1: columns[24] || '',
+            badge2: columns[25] || '',
+            badge3: columns[26] || '',
+            badge4: columns[27] || '',
+            badge5: columns[28] || ''
+          } as NFT;
+        }).filter(nft => nft.token_id && nft.gender); // Only valid NFTs
+
+        setNftData(nfts);
+        setDataLoading(false);
+      } catch (error) {
+        console.error('Failed to load NFT data:', error);
+        setDataLoading(false);
+      }
+    };
+
+    loadNFTs();
+  }, []);
 
   // Handle mobile vs desktop filter state
   useEffect(() => {
@@ -576,12 +659,29 @@ const AppContent: React.FC = () => {
     }
   }, [isMobile]);
 
+  // Show loading state while data is loading
+  if (dataLoading) {
+    return (
+      <Box sx={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: 'var(--bg-color, #1a1a1a)'
+      }}>
+        <Mosaic color="#f74d71" />
+      </Box>
+    );
+  }
+
   return (
-    <ListingsProvider>
-      <FiltersProvider>
-        <AnalyticsProvider>
-          <div className="app">
-          <AppHeader isFiltersOpen={isFiltersOpen} setIsFiltersOpen={setIsFiltersOpen} />
+    <WalletProvider nftData={nftData} badgeData={badgeData}>
+      <ListingsProvider>
+        <FiltersProvider>
+          <AnalyticsProvider>
+            <div className="app">
+            <AppHeader isFiltersOpen={isFiltersOpen} setIsFiltersOpen={setIsFiltersOpen} />
 
           <div className="main-container">
             {isMobile ? (
@@ -633,6 +733,7 @@ const AppContent: React.FC = () => {
         </AnalyticsProvider>
       </FiltersProvider>
     </ListingsProvider>
+    </WalletProvider>
   );
 };
 

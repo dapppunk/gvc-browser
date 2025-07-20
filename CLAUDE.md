@@ -61,7 +61,16 @@ Custom wallet connection system built with wagmi providing:
 - Clean, custom-designed modals matching the site's design system
 - Responsive design for mobile and desktop
 - Copy address and disconnect functionality
+- Wallet-based badge filtering (shows only badges user can gain)
+
+### Badge Filtering System
+When a wallet is connected:
+- Uses Alchemy API to fetch user's NFT holdings
+- Extracts badges from owned NFTs
+- Filters displayed badges to show only gainable ones (excluding duplicates)
+- Requires `VITE_ALCHEMY_API_KEY` to be configured
 
 ## Environment Variables
 - `VITE_OPENSEA_API_KEY` - OpenSea API key for listing data
 - `VITE_WALLETCONNECT_PROJECT_ID` - WalletConnect project ID from https://cloud.walletconnect.com
+- `VITE_ALCHEMY_API_KEY` - Alchemy API key for wallet NFT holdings (required for badge filtering)
