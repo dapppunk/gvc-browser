@@ -2,6 +2,14 @@
 
 This guide covers deploying the GVC Browser with proper API proxy setup to avoid CORS issues.
 
+## Important Note About OpenSea API
+
+OpenSea allows **anonymous API calls** from browsers but **blocks authenticated requests** (with API key) due to CORS policy. 
+
+**Current Solution**: In production, we make anonymous API calls (without API key). This works but may have rate limits.
+
+**For Full API Access**: Deploy with one of the proxy solutions below.
+
 ## Environment Variables
 
 Set these in your deployment platform:

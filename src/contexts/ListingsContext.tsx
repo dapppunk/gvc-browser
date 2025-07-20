@@ -43,21 +43,25 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const openSeaListings: Record<string, Listing> = {};
     
     const apiKey = CONFIG.OPENSEA_API_KEY;
-    if (!apiKey) {
-      console.warn('OpenSea API key not configured. OpenSea listings will not be available.');
-      return openSeaListings;
-    }
-
-    const options = {
-      headers: {
-        'X-API-KEY': apiKey,
-        'Accept': 'application/json',
-      },
+    
+    // In production, don't use API key to avoid CORS issues
+    // OpenSea allows anonymous requests from browsers but blocks authenticated ones
+    const useApiKey = import.meta.env.DEV && apiKey;
+    
+    const headers: any = {
+      'Accept': 'application/json',
     };
+    
+    // Only add API key in development
+    if (useApiKey) {
+      headers['X-API-KEY'] = apiKey;
+    }
+    
+    const options = { headers };
     
     // Log if we're in production to help debug
     if (!import.meta.env.DEV) {
-      console.log('Production API call to:', OPENSEA_API_BASE);
+      console.log('Production API call to:', OPENSEA_API_BASE, '(without API key to avoid CORS)');
     }
 
     try {
