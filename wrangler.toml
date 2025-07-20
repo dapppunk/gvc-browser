@@ -1,0 +1,11 @@
+name = "gvc-opensea-proxy"
+main = "cloudflare-worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+OPENSEA_API_KEY = "1277d5b42ffe45adbe69f9d84851057b"
+
+# Optional: Custom domain setup (add after deployment)
+# routes = [
+#   { pattern = "vibescollector.com/api/opensea/*", zone_name = "vibescollector.com" }
+# ]
