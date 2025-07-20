@@ -221,17 +221,19 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       // Magic Eden v3 RTP API - fetch all marketplace listings
       // We'll filter out OpenSea since we already get those directly
+      // IMPORTANT: Use tokenSetId parameter to filter by collection
+      const tokenSetId = `contract:${COLLECTION_CONTRACT}`;
       let url: string;
       
       if (isUsingProxy && import.meta.env.DEV) {
         // In development, use the local proxy
-        url = `/api/magiceden/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&limit=200`;
+        url = `/api/magiceden/v3/rtp/ethereum/orders/asks/v5?tokenSetId=${encodeURIComponent(tokenSetId)}&limit=200`;
       } else if (isUsingProxy) {
         // In production with Cloudflare proxy
-        url = `${MAGICEDEN_API_BASE}/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&limit=200`;
+        url = `${MAGICEDEN_API_BASE}/v3/rtp/ethereum/orders/asks/v5?tokenSetId=${encodeURIComponent(tokenSetId)}&limit=200`;
       } else {
         // Direct API call
-        url = `https://api-mainnet.magiceden.dev/v3/rtp/ethereum/orders/asks/v5?collection=${COLLECTION_CONTRACT}&limit=200`;
+        url = `https://api-mainnet.magiceden.dev/v3/rtp/ethereum/orders/asks/v5?tokenSetId=${encodeURIComponent(tokenSetId)}&limit=200`;
       }
       
       console.log('Fetching Magic Eden listings from:', url);
