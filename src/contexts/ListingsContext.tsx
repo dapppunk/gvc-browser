@@ -44,15 +44,15 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     const apiKey = CONFIG.OPENSEA_API_KEY;
     
-    // In production, don't use API key to avoid CORS issues
-    // OpenSea allows anonymous requests from browsers but blocks authenticated ones
-    const useApiKey = import.meta.env.DEV && apiKey;
+    // Use API key when using proxy (dev or Vercel), skip for direct API calls
+    const isUsingProxy = OPENSEA_API_BASE.includes('/api/opensea');
+    const useApiKey = isUsingProxy && apiKey;
     
     const headers: any = {
       'Accept': 'application/json',
     };
     
-    // Only add API key in development
+    // Add API key when using proxy
     if (useApiKey) {
       headers['X-API-KEY'] = apiKey;
     }
@@ -61,7 +61,7 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // Log if we're in production to help debug
     if (!import.meta.env.DEV) {
-      console.log('Production API call to:', OPENSEA_API_BASE, '(without API key to avoid CORS)');
+      console.log('Production API call to:', OPENSEA_API_BASE, isUsingProxy ? '(via proxy)' : '(direct, no API key)');
     }
 
     try {

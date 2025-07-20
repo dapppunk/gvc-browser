@@ -12,18 +12,15 @@ export default async function handler(request: Request) {
   const openSeaUrl = `https://api.opensea.io/v2${path}${queryString}`;
 
   // Get the API key from environment variables
-  const apiKey = process.env.OPENSEA_API_KEY;
+  const apiKey = process.env.OPENSEA_API_KEY || process.env.VITE_OPENSEA_API_KEY;
 
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'OpenSea API key not configured' }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+  // If no API key, make anonymous request (still works but with rate limits)
+  const headers: any = {
+    'Accept': 'application/json',
+  };
+  
+  if (apiKey) {
+    headers['X-API-KEY'] = apiKey;
   }
 
   // Handle preflight requests
@@ -42,10 +39,7 @@ export default async function handler(request: Request) {
     // Forward the request to OpenSea
     const response = await fetch(openSeaUrl, {
       method: request.method,
-      headers: {
-        'X-API-KEY': apiKey,
-        'Accept': 'application/json',
-      },
+      headers,
     });
 
     // Get the response data

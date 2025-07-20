@@ -1,6 +1,10 @@
 export const CONFIG = {
   // OpenSea API Configuration
-  OPENSEA_API_BASE: import.meta.env.VITE_OPENSEA_PROXY_URL || (import.meta.env.DEV ? '/api/opensea' : 'https://api.opensea.io/v2'), // Use proxy in dev, direct in prod unless custom proxy provided
+  // Always use proxy on Vercel (detected by VERCEL env var), otherwise use direct API in prod
+  OPENSEA_API_BASE: import.meta.env.VITE_OPENSEA_PROXY_URL || 
+    (import.meta.env.DEV || import.meta.env.VITE_VERCEL || typeof process !== 'undefined' && process.env.VERCEL 
+      ? '/api/opensea' 
+      : 'https://api.opensea.io/v2'),
   OPENSEA_API_KEY: import.meta.env.VITE_OPENSEA_API_KEY || '',
   
   // Magic Eden API Configuration
