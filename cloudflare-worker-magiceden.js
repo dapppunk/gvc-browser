@@ -31,14 +31,8 @@ export default {
     // Parse the URL
     const url = new URL(request.url);
     
-    // Construct Magic Eden API URL - handle v2 and v3 endpoints
+    // Construct Magic Eden API URL
     let pathname = url.pathname;
-    
-    // If the path doesn't start with /v2 or /v3, prepend /v2
-    if (!pathname.startsWith('/v2') && !pathname.startsWith('/v3')) {
-      pathname = '/v2' + pathname;
-    }
-    
     const meUrl = 'https://api-mainnet.magiceden.dev' + pathname + url.search;
     
     // Prepare headers for Magic Eden

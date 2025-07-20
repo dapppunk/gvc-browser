@@ -193,22 +193,15 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     const apiKey = CONFIG.MAGICEDEN_API_KEY;
     
-    // Skip Magic Eden if no API key is configured
-    if (!apiKey) {
-      console.log('Magic Eden API key not configured, skipping Magic Eden listings');
-      return magicEdenListings;
-    }
-    
     // Use API key when using proxy (dev or Cloudflare Worker)
     const isUsingProxy = MAGICEDEN_API_BASE.includes('/api/magiceden') || MAGICEDEN_API_BASE.includes('workers.dev');
-    const useApiKey = isUsingProxy && apiKey;
     
     const headers: any = {
       'Accept': 'application/json',
     };
     
-    // Add API key when using proxy or direct API
-    if (useApiKey || (!isUsingProxy && apiKey)) {
+    // Add API key if available (optional for public endpoints)
+    if (apiKey) {
       headers['Authorization'] = `Bearer ${apiKey}`;
     }
     
@@ -227,118 +220,84 @@ export const ListingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
 
     try {
-      // Magic Eden API for Ethereum collections
-      // Try multiple endpoints as Magic Eden's API structure can vary
-      const endpoints = [
-        // V3 RTP endpoint for Ethereum
-        `${MAGICEDEN_API_BASE.replace('/v2', '/v3/rtp')}/ethereum/tokens/listings?collectionSymbol=good-vibes-club&limit=200`,
-        // Alternative v2 endpoint with chain parameter
-        `${MAGICEDEN_API_BASE}/collections/good-vibes-club/listings?chain=ethereum&limit=200`,
-        // Contract-based endpoint
-        `${MAGICEDEN_API_BASE.replace('/v2', '/v3/rtp')}/ethereum/tokens/listings?contract=${COLLECTION_CONTRACT}&limit=200`,
-        // Token listings endpoint with filters
-        `${MAGICEDEN_API_BASE}/tokens?collection=good-vibes-club&showAll=false&onSaleOnly=true&limit=200`,
-        // Collection items endpoint
-        `${MAGICEDEN_API_BASE}/collections/ethereum/good-vibes-club/items?limit=200`
-      ];
+      // Magic Eden v3 RTP API for Ethereum NFT listings
+      // Using the correct endpoint structure: /v3/rtp/ethereum/orders/asks/v5
+      const baseUrl = isUsingProxy ? MAGICEDEN_API_BASE : 'https://api-mainnet.magiceden.dev';
+      const endpoint = '/v3/rtp/ethereum/orders/asks/v5';
+      const url = `${baseUrl}${endpoint}?collection=${COLLECTION_CONTRACT}&limit=200`;
       
-      let data: any = null;
-      let successfulEndpoint = null;
+      console.log('Fetching Magic Eden listings from:', url);
       
-      // Try each endpoint until one works
-      for (const url of endpoints) {
-        console.log('Trying Magic Eden endpoint:', url);
-        try {
-          // Add timeout to prevent hanging
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-          
-          const response = await fetch(url, {
-            ...options,
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            data = await response.json();
-            successfulEndpoint = url;
-            console.log('Magic Eden API success with endpoint:', url);
-            break;
-          } else {
-            console.log(`Magic Eden endpoint failed (${response.status}):`, url);
-            if (response.status === 401) {
-              console.error('Magic Eden API key may be invalid');
-            }
-          }
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
-            console.log('Magic Eden endpoint timeout:', url);
-          } else {
-            console.log('Magic Eden endpoint error:', url, err.message);
-          }
-        }
-      }
+      const response = await fetch(url, options);
       
-      if (data) {
+      if (response.ok) {
+        const data = await response.json();
         console.log('Magic Eden API response:', data);
         
-        // Process the response based on the actual structure
-        // Handle different possible response formats from Magic Eden
-        const listings = Array.isArray(data) ? data : (data.results || data.listings || []);
+        // Process the v3 API response structure
+        const orders = data.orders || [];
         
-        listings.forEach((listing: any) => {
+        orders.forEach((order: any) => {
           try {
-            // Extract token ID - could be in different fields
-            const tokenId = String(
-              listing.tokenId || 
-              listing.token_id || 
-              listing.id || 
-              (listing.tokenMint && listing.tokenMint.split(':').pop()) ||
-              (listing.token && listing.token.tokenId)
-            );
+            // Extract token info from the order
+            const tokenInfo = order.criteria?.data?.token || {};
+            const tokenId = tokenInfo.tokenId || order.tokenSetId?.split(':').pop();
             
-            // Extract price - could be in different fields and formats
-            let priceValue = 0;
-            if (listing.price) {
-              priceValue = typeof listing.price === 'object' ? 
-                parseFloat(listing.price.amount || listing.price.value) : 
-                parseFloat(listing.price);
-            } else if (listing.listedPrice) {
-              priceValue = parseFloat(listing.listedPrice);
-            } else if (listing.amount) {
-              priceValue = parseFloat(listing.amount);
+            if (!tokenId) {
+              console.warn('No token ID found in order:', order);
+              return;
             }
             
-            // Check if it's in wei and convert to ETH
-            if (priceValue > 1000) {
-              priceValue = priceValue / Math.pow(10, 18);
+            // Extract price from order
+            const price = order.price || {};
+            const priceAmount = price.amount?.raw || price.amount || order.rawPrice;
+            const currency = price.currency?.symbol || 'ETH';
+            
+            if (!priceAmount) {
+              console.warn('No price found in order:', order);
+              return;
             }
             
-            if (tokenId && !isNaN(priceValue) && priceValue > 0) {
-              const url = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
-              
-              magicEdenListings[tokenId] = {
-                price: priceValue,
-                currency: 'ETH',
-                url,
-                marketplace: 'magiceden'
-              };
-              
-              console.log(`Added Magic Eden listing: Token ${tokenId}, Price: ${priceValue} ETH`);
+            // Convert price to ETH (from wei if necessary)
+            let priceInEth = parseFloat(priceAmount);
+            
+            // Check if price is in wei (very large number)
+            if (priceInEth > 1e15) {
+              priceInEth = priceInEth / 1e18;
+            } else if (priceInEth > 1000) {
+              // Might be in gwei or other unit
+              priceInEth = priceInEth / 1e9;
             }
+            
+            // Create listing entry
+            const magicEdenUrl = `https://magiceden.io/item-details/ethereum/${COLLECTION_CONTRACT}/${tokenId}`;
+            
+            magicEdenListings[tokenId] = {
+              price: priceInEth,
+              currency: currency,
+              url: magicEdenUrl,
+              marketplace: 'magiceden'
+            };
+            
+            console.log(`Added Magic Eden listing: Token ${tokenId}, Price: ${priceInEth} ${currency}`);
           } catch (err) {
-            console.warn('Error parsing Magic Eden listing:', listing, err);
+            console.warn('Error parsing Magic Eden order:', order, err);
           }
         });
         
-        if (Object.keys(magicEdenListings).length === 0) {
-          console.log('No valid Magic Eden listings found for this collection');
-        } else {
-          console.log(`Found ${Object.keys(magicEdenListings).length} Magic Eden listings`);
+        // Check if we need to paginate
+        if (data.continuation) {
+          console.log('More listings available, pagination token:', data.continuation);
+          // TODO: Implement pagination if needed
         }
+        
+        console.log(`Found ${Object.keys(magicEdenListings).length} Magic Eden listings`);
+        
       } else {
-        console.error('Failed to fetch Magic Eden listings from any endpoint');
+        console.error('Magic Eden API error:', response.status, response.statusText);
+        if (response.status === 429) {
+          console.error('Rate limited by Magic Eden API');
+        }
       }
     } catch (error) {
       console.error('Error fetching Magic Eden listings:', error);
