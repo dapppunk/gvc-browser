@@ -28,7 +28,8 @@
       "Bash(cp:*)",
       "WebFetch(domain:docs.opensea.io)",
       "Bash(git log:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }
