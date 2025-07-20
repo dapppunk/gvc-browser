@@ -25,7 +25,8 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(cat:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "WebFetch(domain:docs.opensea.io)"
     ],
     "deny": []
   }

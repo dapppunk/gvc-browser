@@ -10,7 +10,7 @@ export default defineConfig({
       '/api/opensea': {
         target: 'https://api.opensea.io',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/opensea/, '/api/v2'),
+        rewrite: (path) => path.replace(/^\/api\/opensea/, '/v2'),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('proxy error', err);
