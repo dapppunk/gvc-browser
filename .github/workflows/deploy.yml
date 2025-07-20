@@ -34,6 +34,8 @@ jobs:
         run: npm run build
         env:
           VITE_OPENSEA_API_KEY: ${{ secrets.VITE_OPENSEA_API_KEY }}
+          VITE_OPENSEA_PROXY_URL: https://gvc-opensea-proxy.h4shkid.workers.dev
+          VITE_WALLETCONNECT_PROJECT_ID: ab0ba184122cc8c74ac00c9b82f5e863
         
       - name: Setup Pages
         uses: actions/configure-pages@v4
