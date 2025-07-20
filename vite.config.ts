@@ -26,7 +26,7 @@ export default defineConfig({
       '/api/magiceden': {
         target: 'https://api-mainnet.magiceden.dev',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/magiceden/, '/v2'),
+        rewrite: (path) => path.replace(/^\/api\/magiceden/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('Magic Eden proxy error', err);
