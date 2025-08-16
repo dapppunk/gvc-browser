@@ -61,12 +61,10 @@ import { WalletContext } from '../contexts/WalletContext';
 import { useListings } from '../contexts/ListingsContext';
 import { NFT } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { ipfsToUrl } from '../utils/ipfs';
 import { BadgeData, loadBadgeData } from '../utils/badges';
 import { calculateRarityScore } from '../utils/rarityCalculator';
 import WallpaperGenerator from './WallpaperGenerator';
-import { getWebPImageUrl, testImageLoad } from '../utils/imageUtils';
-import { needsIPFSBypass } from '../utils/locationUtils';
+import { getWebPImageUrl } from '../utils/imageUtils';
 
 interface FilterState {
   search: string;
@@ -747,10 +745,10 @@ const Profile: React.FC = () => {
                   }}
                   onClick={() => setSelectedNft(nft)}
                 >
-                  {/* NFT Image with UAE optimization */}
+                  {/* NFT Image - Always use WebP */}
                   <Box
                     component="img"
-                    src={ipfsToUrl(nft.image_url)}
+                    src={getWebPImageUrl(nft.token_id)}
                     alt={nft.name}
                     sx={{
                       width: '100%',
@@ -759,34 +757,14 @@ const Profile: React.FC = () => {
                       objectFit: 'cover',
                       display: 'block',
                     }}
-                    onError={async (e) => {
+                    onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      const isUAE = await needsIPFSBypass().catch(() => false);
-                      
-                      if (isUAE && nft.token_id) {
-                        // For UAE users, try WebP fallback
-                        const webpUrl = getWebPImageUrl(nft.token_id);
-                        
-                        if (target.src !== webpUrl) {
-                          const webpWorks = await testImageLoad(webpUrl, 2000);
-                          if (webpWorks) {
-                            target.src = webpUrl;
-                            return;
-                          }
-                        }
-                        
-                        // If WebP also fails, show placeholder
-                        target.style.display = 'none';
-                        const errorDiv = document.createElement('div');
-                        errorDiv.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1a1a1a; color: #666; font-size: 12px; padding: 8px; text-align: center;';
-                        errorDiv.textContent = 'Image unavailable';
-                        target.parentElement?.appendChild(errorDiv);
-                      } else {
-                        // For non-UAE users, fallback to original IPFS image
-                        if (target.src !== ipfsToUrl(nft.image_url)) {
-                          target.src = ipfsToUrl(nft.image_url);
-                        }
-                      }
+                      // If WebP fails, show placeholder
+                      target.style.display = 'none';
+                      const errorDiv = document.createElement('div');
+                      errorDiv.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1a1a1a; color: #666; font-size: 12px; padding: 8px; text-align: center;';
+                      errorDiv.textContent = 'Image unavailable';
+                      target.parentElement?.appendChild(errorDiv);
                     }}
                   />
                   
@@ -944,33 +922,16 @@ const Profile: React.FC = () => {
                   }}
                   onClick={() => setSelectedNft(nft)}
                 >
-                  {/* Image with UAE optimization */}
+                  {/* Image - Always use WebP */}
                   <Box
                     component="img"
-                    src={ipfsToUrl(nft.image_url)}
+                    src={getWebPImageUrl(nft.token_id)}
                     alt={nft.name}
                     sx={{
                       width: 48,
                       height: 48,
                       borderRadius: 1,
                       objectFit: 'cover',
-                    }}
-                    onError={async (e) => {
-                      const target = e.target as HTMLImageElement;
-                      const isUAE = await needsIPFSBypass().catch(() => false);
-                      
-                      if (isUAE && nft.token_id) {
-                        // For UAE users, try WebP fallback
-                        const webpUrl = getWebPImageUrl(nft.token_id);
-                        
-                        if (target.src !== webpUrl) {
-                          const webpWorks = await testImageLoad(webpUrl, 2000);
-                          if (webpWorks) {
-                            target.src = webpUrl;
-                            return;
-                          }
-                        }
-                      }
                     }}
                   />
 
@@ -1307,7 +1268,7 @@ const Profile: React.FC = () => {
               >
                 <Box
                   component="img"
-                  src={ipfsToUrl(selectedNft.image_url)}
+                  src={getWebPImageUrl(selectedNft.token_id)}
                   alt={selectedNft.name}
                   sx={{
                     maxWidth: '100%',
@@ -1317,34 +1278,14 @@ const Profile: React.FC = () => {
                     objectFit: 'contain',
                     borderRadius: 2,
                   }}
-                  onError={async (e) => {
+                  onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const isUAE = await needsIPFSBypass().catch(() => false);
-                    
-                    if (isUAE && selectedNft.token_id) {
-                      // For UAE users, try WebP fallback for modal
-                      const webpUrl = getWebPImageUrl(selectedNft.token_id);
-                      
-                      if (target.src !== webpUrl) {
-                        const webpWorks = await testImageLoad(webpUrl, 3000);
-                        if (webpWorks) {
-                          target.src = webpUrl;
-                          return;
-                        }
-                      }
-                      
-                      // If WebP also fails, show error message
-                      target.style.display = 'none';
-                      const errorDiv = document.createElement('div');
-                      errorDiv.style.cssText = 'width: 400px; height: 400px; display: flex; align-items: center; justify-content: center; background: #2a2a2a; color: #888; font-size: 16px; border-radius: 16px; text-align: center; padding: 20px;';
-                      errorDiv.textContent = 'High-quality image temporarily unavailable in your region';
-                      target.parentElement?.appendChild(errorDiv);
-                    } else {
-                      // For non-UAE users, try original IPFS
-                      if (target.src !== ipfsToUrl(selectedNft.image_url)) {
-                        target.src = ipfsToUrl(selectedNft.image_url);
-                      }
-                    }
+                    // If WebP fails, show error message
+                    target.style.display = 'none';
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'width: 400px; height: 400px; display: flex; align-items: center; justify-content: center; background: #2a2a2a; color: #888; font-size: 16px; border-radius: 16px; text-align: center; padding: 20px;';
+                    errorDiv.textContent = 'Image temporarily unavailable';
+                    target.parentElement?.appendChild(errorDiv);
                   }}
                 />
               </Box>
