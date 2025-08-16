@@ -273,11 +273,11 @@ const Profile: React.FC = () => {
   };
 
   const openOpenSea = (tokenId: string) => {
-    window.open(`https://opensea.io/assets/ethereum/0x10a77f29a6bbeae936f3f27cd60546072dae4db8/${tokenId}`, '_blank');
+    window.open(`https://opensea.io/item/ethereum/0xb8ea78fcacef50d41375e44e6814ebba36bb33c4/${tokenId}`, '_blank');
   };
 
   const openMagicEden = (tokenId: string) => {
-    window.open(`https://magiceden.io/item-details/ethereum/0x10a77f29a6bbeae936f3f27cd60546072dae4db8/${tokenId}`, '_blank');
+    window.open(`https://magiceden.io/item-details/ethereum/0xb8ea78fcacef50d41375e44e6814ebba36bb33c4/${tokenId}`, '_blank');
   };
 
 
