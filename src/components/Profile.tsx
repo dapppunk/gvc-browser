@@ -145,7 +145,11 @@ const Profile: React.FC = () => {
 
   // Load badge data
   useEffect(() => {
-    loadBadgeData().then(setBadgeData);
+    loadBadgeData().then(data => {
+      console.log('Loaded badge data:', data);
+      console.log('Ladies Night badge:', data['ladies_night']);
+      setBadgeData(data);
+    });
   }, []);
 
   // Calculate rarity scores for NFTs
@@ -733,7 +737,8 @@ const Profile: React.FC = () => {
             }}
           >
             {filteredNfts.map((nft) => {
-              const nftBadges = [nft.badge1, nft.badge2, nft.badge3, nft.badge4, nft.badge5].filter(Boolean);
+              const nftBadges = [nft.badge1, nft.badge2, nft.badge3, nft.badge4, nft.badge5]
+                .filter(badge => badge && badge.trim() !== '');
               const nftListing = listings && listings[nft.token_id];
               const listing = nftListing?.bestListing;
               
@@ -837,8 +842,12 @@ const Profile: React.FC = () => {
                       }}
                     >
                       {nftBadges.map((badgeKey, index) => {
-                        const badge = badgeData[badgeKey];
-                        if (!badge) return null;
+                        const trimmedKey = badgeKey.trim();
+                        const badge = badgeData[trimmedKey];
+                        if (!badge) {
+                          console.warn(`Badge not found for key: "${trimmedKey}" (token ${nft.token_id})`);
+                          return null;
+                        }
                         
                         return (
                           <Tooltip key={index} title={badge.displayName}>
@@ -855,7 +864,7 @@ const Profile: React.FC = () => {
                               }}
                             >
                               <img
-                                src={`${import.meta.env.BASE_URL}badges/${badgeKey}.png`}
+                                src={`${import.meta.env.BASE_URL}badges/${trimmedKey}.png`}
                                 alt={badge.displayName}
                                 style={{
                                   width: '100%',
@@ -913,7 +922,8 @@ const Profile: React.FC = () => {
 
             {/* Table Rows */}
             {filteredNfts.map((nft) => {
-              const nftBadges = [nft.badge1, nft.badge2, nft.badge3, nft.badge4, nft.badge5].filter(Boolean);
+              const nftBadges = [nft.badge1, nft.badge2, nft.badge3, nft.badge4, nft.badge5]
+                .filter(badge => badge && badge.trim() !== '');
               const nftListing = listings && listings[nft.token_id];
               const listing = nftListing?.bestListing;
               
@@ -978,8 +988,12 @@ const Profile: React.FC = () => {
                   <Box display="flex" gap={0.5} alignItems="center" flexWrap="wrap">
                     {nftBadges.length > 0 ? (
                       nftBadges.map((badgeKey, index) => {
-                        const badge = badgeData[badgeKey];
-                        if (!badge) return null;
+                        const trimmedKey = badgeKey.trim();
+                        const badge = badgeData[trimmedKey];
+                        if (!badge) {
+                          console.warn(`Badge not found for key: "${trimmedKey}" (token ${nft.token_id}) in list view`);
+                          return null;
+                        }
                         
                         return (
                           <Tooltip key={index} title={badge.displayName}>
@@ -997,7 +1011,7 @@ const Profile: React.FC = () => {
                               }}
                             >
                               <img
-                                src={`${import.meta.env.BASE_URL}badges/${badgeKey}.png`}
+                                src={`${import.meta.env.BASE_URL}badges/${trimmedKey}.png`}
                                 alt={badge.displayName}
                                 style={{
                                   width: '100%',
