@@ -170,6 +170,20 @@ const Profile: React.FC = () => {
         ...nft,
         rarityScore: calculateRarityScore(nft)
       }));
+      
+      // Debug logging for token 6221
+      const token6221 = nftsWithRarity.find(nft => nft.token_id === '6221');
+      if (token6221) {
+        console.log('Token 6221 data:', token6221);
+        console.log('Token 6221 badges:', {
+          badge1: token6221.badge1,
+          badge2: token6221.badge2,
+          badge3: token6221.badge3,
+          badge4: token6221.badge4,
+          badge5: token6221.badge5
+        });
+      }
+      
       setUserNfts(nftsWithRarity);
       setFilteredNfts(nftsWithRarity);
       setLoading(false);
