@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { config } from './wagmi';
 import { ListingsProvider, useListings } from './contexts/ListingsContext';
 import { FiltersProvider, useFilters, SearchSuggestion } from './contexts/FiltersContext';
 import { ThemeProvider, useTheme as useAppTheme } from './contexts/ThemeContext';
 import { AnalyticsProvider, useAnalytics } from './contexts/AnalyticsContext';
-import { WalletProvider } from './contexts/WalletContext';
+import { WalletProvider, WalletContext } from './contexts/WalletContext';
 import { loadBadgeData, BadgeData } from './utils/badges';
 import { NFT } from './types';
 import NFTGrid from './components/NFTGrid';
@@ -17,6 +18,7 @@ import BugReportButton from './components/BugReportButton';
 import FullyCustomConnectButton from './components/FullyCustomConnectButton';
 import StatsPanel from './components/StatsPanel';
 import UAENotification from './components/UAENotification';
+import Profile from './components/Profile';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -38,6 +40,7 @@ import Drawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { Mosaic } from 'react-loading-indicators';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import '@rainbow-me/rainbowkit/styles.css';
 import './rainbowkit-minimal.css';
 import './App.css';
@@ -53,6 +56,9 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
   const { filters, setFilter, totalNfts, filteredCount, getSearchSuggestions } = useFilters();
   const { listings, isLoading: listingsLoading } = useListings();
   const { trackSearch, trackFilter, setShowStatsPanel } = useAnalytics();
+  const { account } = useContext(WalletContext);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [searchValue, setSearchValue] = useState(filters.search || '');
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -533,6 +539,24 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
             gap: isMobile ? 0.5 : 1,
             flexDirection: isSmallMobile ? 'column' : 'row'
           }}>
+            {/* Profile button - only show on home page when connected */}
+            {account && location.pathname === '/' && (
+              <Button
+                onClick={() => navigate('/profile')}
+                startIcon={<AccountCircleIcon />}
+                size={isSmallMobile ? "small" : "medium"}
+                sx={{
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  '&:hover': {
+                    backgroundColor: 'rgba(247, 77, 113, 0.1)'
+                  }
+                }}
+              >
+                {!isSmallMobile && 'Profile'}
+              </Button>
+            )}
             {/* Fully custom wallet connect button */}
             <FullyCustomConnectButton isMobile={isMobile} />
             {!isSmallMobile && (
@@ -566,10 +590,76 @@ const AppHeader: React.FC<HeaderProps> = ({ isFiltersOpen, setIsFiltersOpen }) =
 };
 
 
-const AppContent: React.FC = () => {
+const MainContent: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [isFiltersOpen, setIsFiltersOpen] = useState(true); // Always start open, mobile will override
+
+
+  // Handle mobile vs desktop filter state
+  useEffect(() => {
+    if (isMobile) {
+      setIsFiltersOpen(false); // Close on mobile
+    } else {
+      setIsFiltersOpen(true); // Always open on desktop
+    }
+  }, [isMobile]);
+
+  return (
+    <div className="app">
+      <AppHeader isFiltersOpen={isFiltersOpen} setIsFiltersOpen={setIsFiltersOpen} />
+
+          <div className="main-container">
+            {isMobile ? (
+              <>
+                <Drawer
+                  anchor="left"
+                  open={isFiltersOpen}
+                  onClose={() => setIsFiltersOpen(false)}
+                  variant="temporary"
+                  ModalProps={{
+                    keepMounted: true,
+                    disablePortal: false,
+                    disableScrollLock: true // This should help with mobile scrolling
+                  }}
+                  PaperProps={{
+                    sx: {
+                      width: '85vw',
+                      maxWidth: 320,
+                      backgroundColor: 'var(--card-bg)',
+                      borderRight: '1px solid var(--border-color)',
+                      top: 56,
+                      height: 'calc(100vh - 56px)',
+                      borderRadius: '0 8px 8px 0'
+                    }
+                  }}
+                >
+                  <FilterSidebar onClose={() => setIsFiltersOpen(false)} />
+                </Drawer>
+                <main className="content-area">
+                  <NFTGrid />
+                </main>
+              </>
+            ) : (
+              <>
+                <div style={{ width: '320px', flexShrink: 0, backgroundColor: 'var(--card-bg)', borderRight: '1px solid var(--border-color)' }}>
+                  <FilterSidebar />
+                </div>
+                <main className="content-area" style={{ flex: 1, minWidth: 0 }}>
+                  <NFTGrid />
+                </main>
+              </>
+            )}
+          </div>
+          
+          <BugReportButton />
+          <StatsPanel />
+          <UAENotification />
+        </div>
+  );
+};
+
+const AppContent: React.FC = () => {
   const [nftData, setNftData] = useState<NFT[]>([]);
   const [badgeData, setBadgeData] = useState<BadgeData>({});
   const [dataLoading, setDataLoading] = useState(true);
@@ -650,15 +740,6 @@ const AppContent: React.FC = () => {
     loadNFTs();
   }, []);
 
-  // Handle mobile vs desktop filter state
-  useEffect(() => {
-    if (isMobile) {
-      setIsFiltersOpen(false); // Close on mobile
-    } else {
-      setIsFiltersOpen(true); // Always open on desktop
-    }
-  }, [isMobile]);
-
   // Show loading state while data is loading
   if (dataLoading) {
     return (
@@ -680,59 +761,13 @@ const AppContent: React.FC = () => {
       <ListingsProvider>
         <FiltersProvider>
           <AnalyticsProvider>
-            <div className="app">
-            <AppHeader isFiltersOpen={isFiltersOpen} setIsFiltersOpen={setIsFiltersOpen} />
-
-          <div className="main-container">
-            {isMobile ? (
-              <>
-                <Drawer
-                  anchor="left"
-                  open={isFiltersOpen}
-                  onClose={() => setIsFiltersOpen(false)}
-                  variant="temporary"
-                  ModalProps={{
-                    keepMounted: true,
-                    disablePortal: false,
-                    disableScrollLock: true // This should help with mobile scrolling
-                  }}
-                  PaperProps={{
-                    sx: {
-                      width: '85vw',
-                      maxWidth: 320,
-                      backgroundColor: 'var(--card-bg)',
-                      borderRight: '1px solid var(--border-color)',
-                      top: 56,
-                      height: 'calc(100vh - 56px)',
-                      borderRadius: '0 8px 8px 0'
-                    }
-                  }}
-                >
-                  <FilterSidebar onClose={() => setIsFiltersOpen(false)} />
-                </Drawer>
-                <main className="content-area">
-                  <NFTGrid />
-                </main>
-              </>
-            ) : (
-              <>
-                <div style={{ width: '320px', flexShrink: 0, backgroundColor: 'var(--card-bg)', borderRight: '1px solid var(--border-color)' }}>
-                  <FilterSidebar />
-                </div>
-                <main className="content-area" style={{ flex: 1, minWidth: 0 }}>
-                  <NFTGrid />
-                </main>
-              </>
-            )}
-          </div>
-          
-          <BugReportButton />
-          <StatsPanel />
-          <UAENotification />
-        </div>
-        </AnalyticsProvider>
-      </FiltersProvider>
-    </ListingsProvider>
+            <Routes>
+              <Route path="/" element={<MainContent />} />
+              <Route path="/profile" element={<Profile />} />
+            </Routes>
+          </AnalyticsProvider>
+        </FiltersProvider>
+      </ListingsProvider>
     </WalletProvider>
   );
 };
@@ -767,7 +802,9 @@ const App: React.FC = () => {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <RainbowKitWrapper>
-            <AppContent />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
           </RainbowKitWrapper>
         </ThemeProvider>
       </QueryClientProvider>

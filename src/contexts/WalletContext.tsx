@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAccount, usePublicClient } from 'wagmi';
+import { useAccount, usePublicClient, useEnsName, useEnsAvatar } from 'wagmi';
 import { CONFIG } from '../config';
 import { NFT } from '../types';
 import { Badge, BadgeData, getNFTBadges } from '../utils/badges';
@@ -7,17 +7,28 @@ import { Badge, BadgeData, getNFTBadges } from '../utils/badges';
 interface WalletContextType {
   ownedTokenIds: string[];
   ownedBadges: Set<string>;
+  ownedNfts: NFT[];
   isLoadingOwnership: boolean;
+  isLoadingNfts: boolean;
   refreshOwnership: () => Promise<void>;
+  account: string | undefined;
+  ensName: string | null | undefined;
+  ensAvatar: string | null | undefined;
 }
 
 const WalletContext = createContext<WalletContextType>({
   ownedTokenIds: [],
   ownedBadges: new Set(),
+  ownedNfts: [],
   isLoadingOwnership: false,
+  isLoadingNfts: false,
   refreshOwnership: async () => {},
+  account: undefined,
+  ensName: undefined,
+  ensAvatar: undefined,
 });
 
+export { WalletContext };
 export const useWallet = () => useContext(WalletContext);
 
 interface WalletProviderProps {
@@ -30,8 +41,11 @@ interface WalletProviderProps {
 export const WalletProvider: React.FC<WalletProviderProps> = ({ children, nftData, badgeData }) => {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
+  const { data: ensName } = useEnsName({ address });
+  const { data: ensAvatar } = useEnsAvatar({ name: ensName ?? undefined });
   const [ownedTokenIds, setOwnedTokenIds] = useState<string[]>([]);
   const [ownedBadges, setOwnedBadges] = useState<Set<string>>(new Set());
+  const [ownedNfts, setOwnedNfts] = useState<NFT[]>([]);
   const [isLoadingOwnership, setIsLoadingOwnership] = useState(false);
 
   const refreshOwnership = useCallback(async () => {
@@ -91,22 +105,26 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, nftDat
 
       setOwnedTokenIds(tokenIds);
 
-      // Extract badges from owned NFTs
+      // Extract NFT objects and badges from owned NFTs
       const badgeSet = new Set<string>();
+      const nfts: NFT[] = [];
       tokenIds.forEach(tokenId => {
         const nft = nftData.find(n => n.token_id === tokenId);
         if (nft) {
+          nfts.push(nft);
           const badges = getNFTBadges(nft, badgeData);
           badges.forEach(badge => badgeSet.add(badge.key));
         }
       });
 
+      setOwnedNfts(nfts);
       setOwnedBadges(badgeSet);
       console.log(`Found ${tokenIds.length} NFTs for wallet ${address}`);
     } catch (error) {
       console.error('Error loading NFT ownership:', error);
       setOwnedTokenIds([]);
       setOwnedBadges(new Set());
+      setOwnedNfts([]);
     } finally {
       setIsLoadingOwnership(false);
     }
@@ -119,6 +137,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, nftDat
     } else {
       setOwnedTokenIds([]);
       setOwnedBadges(new Set());
+      setOwnedNfts([]);
     }
   }, [isConnected, refreshOwnership]);
 
@@ -126,8 +145,13 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, nftDat
     <WalletContext.Provider value={{
       ownedTokenIds,
       ownedBadges,
+      ownedNfts,
       isLoadingOwnership,
+      isLoadingNfts: isLoadingOwnership,
       refreshOwnership,
+      account: address,
+      ensName,
+      ensAvatar,
     }}>
       {children}
     </WalletContext.Provider>
