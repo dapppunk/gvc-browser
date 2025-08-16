@@ -44,6 +44,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import '@rainbow-me/rainbowkit/styles.css';
 import './rainbowkit-minimal.css';
 import './App.css';
+// Version 1.0.1 - Profile and Wallpaper Feature
 
 const queryClient = new QueryClient();
 
