@@ -96,6 +96,7 @@ const Profile: React.FC = () => {
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [wallpaperDialogOpen, setWallpaperDialogOpen] = useState(false);
+  const [wallpaperNft, setWallpaperNft] = useState<NFT | null>(null);
   
   // Enhanced filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -668,7 +669,10 @@ const Profile: React.FC = () => {
                 variant="outlined"
                 size="small"
                 startIcon={<Wallpaper />}
-                onClick={() => setWallpaperDialogOpen(true)}
+                onClick={() => {
+                  setWallpaperNft(null); // Clear single NFT selection
+                  setWallpaperDialogOpen(true);
+                }}
                 disabled={filteredNfts.length === 0}
                 sx={{
                   color: '#ffa300',
@@ -1399,23 +1403,47 @@ const Profile: React.FC = () => {
 
                 {/* Action Buttons */}
                 <Box sx={{ p: 3, borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={() => openOpenSea(selectedNft.token_id)}
-                    sx={{
-                      backgroundColor: '#2081e2',
-                      color: '#fff',
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      py: 1.5,
-                      '&:hover': {
-                        backgroundColor: '#1868c7',
-                      },
-                    }}
-                  >
-                    View on OpenSea
-                  </Button>
+                  <Stack spacing={2}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      onClick={() => openOpenSea(selectedNft.token_id)}
+                      sx={{
+                        backgroundColor: '#2081e2',
+                        color: '#fff',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        py: 1.5,
+                        '&:hover': {
+                          backgroundColor: '#1868c7',
+                        },
+                      }}
+                    >
+                      View on OpenSea
+                    </Button>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      startIcon={<Wallpaper />}
+                      onClick={() => {
+                        setWallpaperNft(selectedNft); // Set the current NFT for wallpaper
+                        setWallpaperDialogOpen(true);
+                        setSelectedNft(null); // Close the detail modal
+                      }}
+                      sx={{
+                        backgroundColor: '#ffa300',
+                        color: '#fff',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        py: 1.5,
+                        '&:hover': {
+                          backgroundColor: '#ff8c00',
+                        },
+                      }}
+                    >
+                      Generate Wallpaper
+                    </Button>
+                  </Stack>
                 </Box>
 
                 {/* Traits Section */}
@@ -1622,8 +1650,11 @@ const Profile: React.FC = () => {
         {/* Wallpaper Generator Dialog */}
         <WallpaperGenerator
           open={wallpaperDialogOpen}
-          onClose={() => setWallpaperDialogOpen(false)}
-          selectedNfts={filteredNfts}
+          onClose={() => {
+            setWallpaperDialogOpen(false);
+            setWallpaperNft(null); // Clear wallpaper NFT selection
+          }}
+          selectedNfts={wallpaperNft ? [wallpaperNft] : filteredNfts}
           badgeData={badgeData}
         />
       </Container>
